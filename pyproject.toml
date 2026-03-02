@@ -1,0 +1,17 @@
+[project]
+name = "static-gallery"
+version = "0.1.0"
+description = "A simple static site generator written in Python."
+readme = "README.md"
+authors = [
+    { name = "Brian Van Horne", email = "code@brianvanhorne.com" }
+]
+requires-python = ">=3.14"
+dependencies = []
+
+[project.scripts]
+gallery = "static_gallery:main"
+
+[build-system]
+requires = ["uv_build>=0.10.7,<0.11.0"]
+build-backend = "uv_build"
