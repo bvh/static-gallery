@@ -1,7 +1,7 @@
 # Static Gallery
 
 Static Gallery is a simple static site generator written in Python. Images
-and image galleries are supported as first class objects. Modern,
+are supported as first class objects, and gallery support is planned. Modern,
 well-structured HTML/CSS is encouraged, and JavaScript is 100% optional.
 Supports Markdown for source text, and Jinja templates for output.
 
@@ -27,9 +27,13 @@ root of the source directory)
 
 The root of the site source directory **must** contain a `site.conf` file.
 Config files consists of one entry per line, each containing a key and a
-value, separated by a colon.
+value, separated by a colon. Values are split on the first colon only, so
+values may contain colons (e.g., URLs). Leading and trailing whitespace is
+trimmed from both keys and values. Blank lines are ignored, and lines
+beginning with `#` are treated as comments.
 
 ```
+# Site metadata
 title: Brian Van Horne's Home Page
 language: en-us
 url: https://brianvanhorne.com/
@@ -53,10 +57,13 @@ The *content* of markdown files will be parsed in accordance with the
 CommonMark spec.
 
 For metadata (title, author, date) an optional header will be supported. If
-the first line of a markdown file is consists of a key/value pair separated
-by a colon, the the file contains a header, and all contiguous key/value
-lines will be parsed as the header, until a blank line is encountered. For
-example:
+the first line of a markdown file consists of a key/value pair separated
+by a colon, the file contains a header, and all contiguous key/value
+lines will be parsed as the header, until a blank line is encountered.
+Front matter uses the same parsing rules as `site.conf` — split on the
+first colon, trim whitespace from keys and values, keys are
+case-insensitive — except that comments are not supported in front matter.
+For example:
 
 ```
 Title: My Blog Post
@@ -71,11 +78,41 @@ configuration, keys are case-insensitive), the third line is the header/body
 separator, and is discarded, and the fourth line is passed on to the markdown
 parser as the content.
 
+## Templates
+
+Templates are [Jinja](https://jinja.palletsprojects.com/en/stable/) files
+stored in the `.theme/` directory at the source root. Because `.theme/`
+begins with a dot, it is automatically excluded from content processing
+by rule #1 in the workflow below.
+
+The template used for a given page is selected by type: the system looks
+for `.theme/{type}.html`. Default types are:
+
+* **page** — used for markdown files (i.e., `.theme/page.html`)
+* **image** — used for image files (i.e., `.theme/image.html`)
+
+Markdown files can override the default type via a `Type:` front matter
+key. For example, a markdown file with `Type: image` will use
+`.theme/image.html` instead of `.theme/page.html`.
+
+The following variables are available within templates:
+
+* **site** — all key/value pairs from `site.conf`
+* **page** — page metadata from front matter (markdown files) or generated
+  metadata (image files)
+* **content** — the rendered HTML body (for markdown files) or the image
+  path (for image files)
+
 ## Workflow
 
 The system starts by scanning the root of the site source directory for a
 `site.conf` and parsing it. If one is not found, or if the file cannot be
 parsed, it will exit with an error.
+
+The target directory is created if it doesn't exist. On each build, the
+system syncs the target with the source: it writes new and updated files,
+and removes any files in the target that no longer correspond to a source
+file. This prevents stale files from accumulating across builds.
 
 Next, scan the directory for any remaining items. We use a two pass system,
 so first scan the tree and create a graph of work required to build the site,
@@ -143,6 +180,14 @@ The resulting target tree should look like this:
 │   └── today.jpg   <-- copied from news/today.jpg
 └── styles.css      <-- copied from styles.css
 ```
+
+## Error Handling
+
+The system uses strict fail-fast behavior. Any error stops the build
+immediately and reports a clear message to stderr. This includes, but is
+not limited to: a missing or unparseable `site.conf`, invalid front matter,
+a missing template, an unreadable source file, or an unwritable target
+directory.
 
 ## References
 
