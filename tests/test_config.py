@@ -1,5 +1,4 @@
 import pytest
-from pathlib import Path
 from static_gallery.config import parse_config, parse_front_matter
 
 
