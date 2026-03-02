@@ -1,2 +1,51 @@
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+
+from static_gallery.config import error, parse_config
+from static_gallery.scanner import scan
+from static_gallery.builder import build
+
+
 def main() -> None:
-    print("Hello from static-gallery!")
+    parser = argparse.ArgumentParser(
+        prog="gallery",
+        description="Static Gallery — a static site generator with image support.",
+    )
+    parser.add_argument(
+        "--source",
+        type=Path,
+        default=Path.cwd(),
+        help="source directory (default: current working directory)",
+    )
+    parser.add_argument(
+        "--target",
+        type=Path,
+        default=None,
+        help="target directory (default: .public inside source)",
+    )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help="config file path (default: site.conf in source root)",
+    )
+
+    args = parser.parse_args()
+
+    source = args.source.resolve()
+    if not source.is_dir():
+        error(f"Source directory does not exist: {source}")
+
+    target = (args.target or source / ".public").resolve()
+    config_path = (args.config or source / "site.conf").resolve()
+
+    site_config = parse_config(config_path)
+
+    target.mkdir(parents=True, exist_ok=True)
+
+    config_filename = config_path.name if config_path.parent == source else ""
+    tasks = scan(source, target, config_filename)
+
+    build(tasks, site_config, source, target)

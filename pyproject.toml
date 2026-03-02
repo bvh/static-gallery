@@ -7,7 +7,13 @@ authors = [
     { name = "Brian Van Horne", email = "code@brianvanhorne.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "jinja2>=3.1",
+    "mistletoe>=1.4",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
 
 [project.scripts]
 gallery = "static_gallery:main"

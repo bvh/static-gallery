@@ -2,14 +2,16 @@
 
 ## Project Overview
 
-Static Gallery is a static site generator in Python with first-class image/gallery support. It uses Markdown (CommonMark) for content and Jinja templates for output. Zero external dependencies. Early stage (0.1.0) — the README contains the full design spec but only scaffolding is implemented so far.
+Static Gallery is a static site generator in Python with first-class image/gallery support. It uses Markdown (CommonMark) for content and Jinja templates for output. Early stage (0.1.0) — the README contains the full design spec.
 
 ## Development
 
 - **Python 3.14**, managed with **uv**
 - Entry point: `src/static_gallery/__init__.py` → CLI command `gallery` (via `static_gallery:main`)
+- Runtime dependencies: `jinja2`, `mistletoe`
+- Dev dependencies: `pytest`
 - Install/run: `uv run gallery`
-- No test framework, linter, or CI configured yet
+- Run tests: `uv run pytest`
 
 ## Architecture (from design spec in README)
 
