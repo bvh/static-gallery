@@ -1,39 +1,40 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 ## Project Overview
 
 Static Gallery is a static site generator in Python with first-class image/gallery support. It uses Markdown (CommonMark) for content and Jinja templates for output. Early stage (0.1.0) — the README contains the full design spec.
 
-## Development
+## Commands
 
+- **Run**: `uv run gallery` (CLI flags: `--source`, `--target`, `--config`)
+- **Run tests**: `uv run pytest`
+- **Run a single test**: `uv run pytest tests/test_scanner.py::test_name` or `uv run pytest -k "keyword"`
 - **Python 3.14**, managed with **uv**
-- Entry point: `src/static_gallery/__init__.py` → CLI command `gallery` (via `static_gallery:main`)
-- Runtime dependencies: `jinja2`, `mistletoe`
-- Dev dependencies: `pytest`
-- Install/run: `uv run gallery`
-- Run tests: `uv run pytest`
 
-## Architecture (from design spec in README)
+## Architecture
 
-**Two-pass build system:**
-1. Scan source tree and build a dependency graph
-2. Execute the graph to produce the target tree
+**Two-pass build:** scan source tree into a `Node` tree, then walk the tree to produce output files.
 
-**File processing rules:**
-- Dotfiles/dotdirs are ignored
-- `.md` files → parsed as CommonMark, generate `.html` in target
-- Images (`.jpeg`, `.jpg`, `.webp`, `.png`) → generate an `.html` page per image + copy as static asset
-- Everything else (`.css`, `.js`, etc.) → copied as static assets
-- Markdown takes precedence over images for HTML generation on name collisions
+### Modules
 
-**Templates:** Jinja files in `.theme/` at source root. Selected by type: `.theme/{type}.html`. Defaults: `page` for markdown, `image` for images. Markdown files can override via `Type:` front matter key. Template variables: `site` (config), `page` (metadata), `content` (rendered HTML or image path).
+- `__init__.py` — CLI entry point (`main`). Parses args, wires together config → scan → build.
+- `config.py` — Parses `site.conf` (key:value, split on first colon, case-insensitive keys, `#` comments) and markdown front matter (same format, no comments, terminated by blank line). Shared `_parse_line` helper.
+- `scanner.py` — `scan()` walks the source tree with `rglob`, classifies files by extension, and returns a `Node` tree. Skips dotfiles/dotdirs and the config file.
+- `builder.py` — `build()` walks the `Node` tree, renders markdown/image pages through Jinja templates, copies static assets, then syncs the target directory (removes orphans).
+- `model.py` — `Node` dataclass (tree structure) and `NodeType` enum (`MARKDOWN`, `IMAGE`, `STATIC`).
+- `errors.py` — `GalleryError` exception. All user-facing errors raise this; `main` catches it and prints to stderr.
 
-**Configuration:** `site.conf` in source root — split on first colon, trim whitespace, keys are case-insensitive. `#` lines are comments, blank lines ignored. Required keys: title, url, language. Non-recognized keys are passed through.
+### Key design details
 
-**Markdown front matter:** Optional header of key:value lines at top of `.md` files, terminated by a blank line. Same parsing rules as config (split on first colon, trim whitespace, case-insensitive keys) except no comment support.
+- **index.md collapsing**: An `index.md` file is not a child node — it collapses into its parent directory node, setting that node's `node_type` to `MARKDOWN` and `source` to the index.md path. Directory nodes without an index.md have `node_type=None` and `source=None`.
+- **Collision resolution**: In a directory, markdown stems are collected first. Images whose stem matches a markdown file are demoted to `STATIC` (copied but no HTML page generated).
+- **Target sync**: After building, `_sync_target` removes files in target not in the expected set, then removes empty directories. This prevents stale files across builds.
+- **Templates**: Loaded from `.theme/` at source root. Selected by type name (`page` for markdown, `image` for images). Markdown can override via `Type:` front matter key.
+- **Strict fail-fast**: Any error stops the build immediately via `GalleryError`.
 
-**Target directory:** Syncs on each build — writes new/updated files, removes orphans with no corresponding source. Created if it doesn't exist.
+### Dependencies
 
-**Error handling:** Strict fail-fast. Any error (missing config, bad front matter, missing template, unreadable/unwritable files) stops the build immediately with a message to stderr.
-
-**CLI flags:** `--source` (default: cwd), `--target` (default: `.public`), `--config` (default: `site.conf` in source root)
+- Runtime: `jinja2`, `mistletoe` (CommonMark), `markupsafe` (via jinja2, used for `Markup()` to mark rendered HTML as safe)
+- Dev: `pytest`
