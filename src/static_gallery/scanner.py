@@ -1,45 +1,59 @@
 from __future__ import annotations
 
-from collections import defaultdict
-from dataclasses import dataclass, field
-from enum import Enum, auto
 from pathlib import Path
 
-
-class TaskType(Enum):
-    MARKDOWN = auto()
-    IMAGE = auto()
-    STATIC = auto()
+from static_gallery.model import FileType, SourceDir, SourceFile
 
 
 _IMAGE_EXTENSIONS = {".jpeg", ".jpg", ".webp", ".png"}
 
 
-@dataclass(frozen=True)
-class BuildTask:
-    task_type: TaskType
-    source_path: Path
-    target_paths: list[Path] = field(hash=False)
-
-
-def _classify(path: Path) -> TaskType:
+def _classify(path: Path) -> FileType:
     ext = path.suffix.lower()
     if ext == ".md":
-        return TaskType.MARKDOWN
+        return FileType.MARKDOWN
     if ext in _IMAGE_EXTENSIONS:
-        return TaskType.IMAGE
-    return TaskType.STATIC
+        return FileType.IMAGE
+    return FileType.STATIC
 
 
 def _has_dot_component(rel: Path) -> bool:
     return any(part.startswith(".") for part in rel.parts)
 
 
-def scan(source: Path, target: Path, config_filename: str) -> list[BuildTask]:
-    config_path = source / config_filename
+def _ensure_dir(root: SourceDir, rel: Path) -> SourceDir:
+    node = root
+    for part in rel.parts:
+        if part not in node.children:
+            child_rel = node.rel_path / part
+            node.children[part] = SourceDir(rel_path=child_rel)
+        node = node.children[part]
+    return node
 
-    # Collect and classify all files
-    by_dir: dict[Path, list[tuple[Path, TaskType]]] = defaultdict(list)
+
+def _resolve_and_assign_targets(node: SourceDir, target: Path) -> None:
+    md_stems = {f.rel_path.stem.lower() for f in node.files if f.file_type == FileType.MARKDOWN}
+
+    for f in node.files:
+        if f.file_type == FileType.IMAGE and f.rel_path.stem.lower() in md_stems:
+            f.file_type = FileType.STATIC
+
+        rel = f.rel_path
+        if f.file_type == FileType.MARKDOWN:
+            f.html_target = target / rel.with_suffix(".html")
+        elif f.file_type == FileType.IMAGE:
+            f.html_target = target / rel.with_suffix(".html")
+            f.asset_target = target / rel
+        else:
+            f.asset_target = target / rel
+
+    for child in node.children.values():
+        _resolve_and_assign_targets(child, target)
+
+
+def scan(source: Path, target: Path, config_filename: str) -> SourceDir:
+    config_path = source / config_filename
+    root = SourceDir(rel_path=Path("."))
 
     for path in sorted(source.rglob("*")):
         if not path.is_file():
@@ -51,27 +65,18 @@ def scan(source: Path, target: Path, config_filename: str) -> list[BuildTask]:
         if path == config_path:
             continue
 
-        task_type = _classify(path)
-        by_dir[path.parent].append((path, task_type))
+        file_type = _classify(path)
+        parent_rel = rel.parent
+        if parent_rel == Path("."):
+            dir_node = root
+        else:
+            dir_node = _ensure_dir(root, parent_rel)
 
-    # Resolve collisions per directory
-    tasks: list[BuildTask] = []
+        dir_node.files.append(SourceFile(
+            file_type=file_type,
+            source_path=path,
+            rel_path=rel,
+        ))
 
-    for dir_path, entries in by_dir.items():
-        md_stems = {p.stem.lower() for p, t in entries if t == TaskType.MARKDOWN}
-
-        for path, task_type in entries:
-            if task_type == TaskType.IMAGE and path.stem.lower() in md_stems:
-                task_type = TaskType.STATIC
-
-            rel = path.relative_to(source)
-            if task_type == TaskType.MARKDOWN:
-                target_paths = [target / rel.with_suffix(".html")]
-            elif task_type == TaskType.IMAGE:
-                target_paths = [target / rel.with_suffix(".html"), target / rel]
-            else:
-                target_paths = [target / rel]
-
-            tasks.append(BuildTask(task_type, path, target_paths))
-
-    return tasks
+    _resolve_and_assign_targets(root, target)
+    return root

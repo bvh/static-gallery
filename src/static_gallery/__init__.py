@@ -47,6 +47,6 @@ def main() -> None:
     target.mkdir(parents=True, exist_ok=True)
 
     config_filename = config_path.name if config_path.parent == source else ""
-    tasks = scan(source, target, config_filename)
+    tree = scan(source, target, config_filename)
 
-    build(tasks, site_config, source, target)
+    build(tree, site_config, source, target)
