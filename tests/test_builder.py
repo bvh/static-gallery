@@ -1,6 +1,7 @@
 import pytest
 from pathlib import Path
 from static_gallery.builder import build
+from static_gallery.errors import GalleryError
 from static_gallery.model import FileType, SourceDir, SourceFile
 
 
@@ -260,7 +261,7 @@ class TestBuildErrors:
             FileType.MARKDOWN, md_file, Path("index.md"),
             html_target=target / "index.html",
         )])
-        with pytest.raises(SystemExit):
+        with pytest.raises(GalleryError):
             build(tree, _site_config(), source, target)
 
     def test_unreadable_source_exits(self, tmp_path):
@@ -275,5 +276,5 @@ class TestBuildErrors:
             FileType.MARKDOWN, missing, Path("gone.md"),
             html_target=target / "gone.html",
         )])
-        with pytest.raises(SystemExit):
+        with pytest.raises(GalleryError):
             build(tree, _site_config(), source, target)

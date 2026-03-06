@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 from static_gallery.config import parse_config
-from static_gallery.errors import error
+from static_gallery.errors import error, GalleryError
 from static_gallery.scanner import scan
 from static_gallery.builder import build
 
@@ -35,18 +36,22 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    source = args.source.resolve()
-    if not source.is_dir():
-        error(f"Source directory does not exist: {source}")
+    try:
+        source = args.source.resolve()
+        if not source.is_dir():
+            error(f"Source directory does not exist: {source}")
 
-    target = (args.target or source / ".public").resolve()
-    config_path = (args.config or source / "site.conf").resolve()
+        target = (args.target or source / ".public").resolve()
+        config_path = (args.config or source / "site.conf").resolve()
 
-    site_config = parse_config(config_path)
+        site_config = parse_config(config_path)
 
-    target.mkdir(parents=True, exist_ok=True)
+        target.mkdir(parents=True, exist_ok=True)
 
-    config_filename = config_path.name if config_path.parent == source else ""
-    tree = scan(source, target, config_filename)
+        config_filename = config_path.name if config_path.parent == source else ""
+        tree = scan(source, target, config_filename)
 
-    build(tree, site_config, source, target)
+        build(tree, site_config, source, target)
+    except GalleryError as exc:
+        print(exc, file=sys.stderr)
+        sys.exit(1)

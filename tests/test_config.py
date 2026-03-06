@@ -1,5 +1,6 @@
 import pytest
 from static_gallery.config import parse_config, parse_front_matter
+from static_gallery.errors import GalleryError
 
 
 class TestParseConfig:
@@ -47,18 +48,18 @@ class TestParseConfig:
     def test_missing_required_key_exits(self, tmp_path):
         conf = tmp_path / "site.conf"
         conf.write_text("title: My Site\n")
-        with pytest.raises(SystemExit):
+        with pytest.raises(GalleryError):
             parse_config(conf)
 
     def test_missing_file_exits(self, tmp_path):
         conf = tmp_path / "nonexistent.conf"
-        with pytest.raises(SystemExit):
+        with pytest.raises(GalleryError):
             parse_config(conf)
 
     def test_malformed_line_exits(self, tmp_path):
         conf = tmp_path / "site.conf"
         conf.write_text("title: My Site\nno colon here\nurl: https://example.com/\nlanguage: en-us\n")
-        with pytest.raises(SystemExit):
+        with pytest.raises(GalleryError):
             parse_config(conf)
 
     def test_extra_keys_passed_through(self, tmp_path):
@@ -112,7 +113,7 @@ class TestParseFrontMatter:
 
     def test_malformed_line_exits(self):
         text = "Title: My Post\nno colon here\n\nBody."
-        with pytest.raises(SystemExit):
+        with pytest.raises(GalleryError):
             parse_front_matter(text)
 
     def test_whitespace_trimmed(self):

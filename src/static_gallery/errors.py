@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import sys
-from typing import NoReturn
+
+class GalleryError(Exception):
+    pass
 
 
-def error(msg: str) -> NoReturn:
-    print(msg, file=sys.stderr)
-    sys.exit(1)
+def error(msg: str) -> None:
+    raise GalleryError(msg)

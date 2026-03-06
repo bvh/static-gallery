@@ -4,6 +4,7 @@ import shutil
 from pathlib import Path
 
 import jinja2
+from markupsafe import Markup
 import mistletoe
 
 from static_gallery.config import parse_front_matter
@@ -21,7 +22,7 @@ def build(
     try:
         env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(str(theme_dir)),
-            autoescape=False,
+            autoescape=True,
         )
     except Exception as exc:
         error(f"Cannot load templates from {theme_dir}: {exc}")
@@ -73,7 +74,7 @@ def _build_markdown(
         del metadata["type"]
     template = _load_template(env, template_type)
 
-    output = template.render(site=site_config, page=metadata, content=html_content)
+    output = template.render(site=site_config, page=metadata, content=Markup(html_content))
 
     f.html_target.parent.mkdir(parents=True, exist_ok=True)
     try:

@@ -42,7 +42,7 @@ def parse_front_matter(text: str) -> tuple[dict[str, str], str]:
     if not text:
         return {}, ""
 
-    lines = text.split("\n")
+    lines = text.splitlines()
 
     # Check if first line looks like a key:value pair
     first = lines[0].strip()
