@@ -1,7 +1,7 @@
 # Static Gallery
 
 Static Gallery is a simple static site generator written in Python. Images
-are supported as first class objects, and gallery support is planned. Modern,
+are supported as first class objects, with built-in gallery support. Modern,
 well-structured HTML/CSS is encouraged, and JavaScript is 100% optional.
 Supports Markdown for source text, and Jinja templates for output.
 
@@ -113,6 +113,67 @@ The following variables are available within templates:
   metadata (image files)
 * **content** — the rendered HTML body (for markdown files) or the image
   path (for image files)
+
+## Shortcodes
+
+Shortcodes embed content directly into markdown using `<< >>` syntax. They
+are expanded before markdown parsing, and each type is rendered through a
+Jinja template in `.theme/shortcodes/`.
+
+### File Shortcodes
+
+Reference a file by path to embed it. The file extension determines which
+template is used:
+
+```
+<<photo.jpg>>                        # image shortcode
+<<photo.jpg A beautiful sunset>>     # with explicit alt text
+<<code/example.py>>                  # code shortcode (inlined)
+<<data.csv>>                         # csv shortcode (inlined)
+<<notes.txt>>                        # text shortcode (inlined)
+```
+
+Supported types and their templates:
+
+* **image** (`.jpeg`, `.jpg`, `.webp`, `.png`, `.gif`, `.svg`) →
+  `.theme/shortcodes/image.html`
+* **code** (`.py`, `.js`, `.ts`, `.css`, `.html`, `.sh`, `.json`, `.yaml`,
+  `.yml`, `.toml`, `.xml`, `.sql`, `.rs`, `.go`, `.c`, `.h`) →
+  `.theme/shortcodes/code.html`
+* **text** (`.txt`) → `.theme/shortcodes/text.html`
+* **csv** (`.csv`) → `.theme/shortcodes/csv.html`
+
+For images, the alt text defaults to the filename stem with dashes and
+underscores replaced by spaces. Code, text, and csv files have their
+content inlined into the template.
+
+### Gallery Shortcode
+
+The `<<gallery>>` shortcode embeds a listing of images from a directory,
+with each image linking to its generated HTML page:
+
+```
+<<gallery>>                              # all images in current directory
+<<gallery sort=name>>                    # sorted by filename (default)
+<<gallery sort=date reverse>>            # reverse chronological
+<<gallery filter=*.jpg>>                 # only JPGs
+<<gallery path=photos>>                  # images from a subdirectory
+<<gallery path=photos sort=name filter=*.jpg>>
+```
+
+| Option    | Values         | Default     | Description                      |
+|-----------|----------------|-------------|----------------------------------|
+| `sort`    | `name`, `date` | `name`      | Sort key                         |
+| `reverse` | bare flag      | false       | Reverse sort order               |
+| `filter`  | glob pattern   | none        | Filter filenames (e.g. `*.jpg`)  |
+| `path`    | relative path  | current dir | Directory to scan                |
+
+The gallery is rendered through `.theme/shortcodes/gallery.html`, which
+receives an `images` list (each with `path`, `filename`, `stem`,
+`extension`, `alt`, and `page_url`) and an `options` dict.
+
+Only image types that generate HTML pages (`.jpeg`, `.jpg`, `.webp`,
+`.png`) are included in gallery listings.
 
 ## Workflow
 

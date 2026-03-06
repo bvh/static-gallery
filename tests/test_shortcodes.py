@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import jinja2
 import pytest
 
@@ -8,6 +10,12 @@ IMAGE_TPL = '<img src="{{ path }}" alt="{{ alt }}">'
 CODE_TPL = '<pre><code class="language-{{ language }}">{{ content }}</code></pre>'
 TEXT_TPL = "<pre>{{ content }}</pre>"
 CSV_TPL = "<pre>{{ content }}</pre>"
+GALLERY_TPL = (
+    "{% for image in images %}"
+    "{{ image.filename }}:{{ image.page_url }}"
+    "{% if not loop.last %},{% endif %}"
+    "{% endfor %}"
+)
 
 
 @pytest.fixture
@@ -18,6 +26,7 @@ def env(tmp_path):
     (tpl_dir / "code.html").write_text(CODE_TPL)
     (tpl_dir / "text.html").write_text(TEXT_TPL)
     (tpl_dir / "csv.html").write_text(CSV_TPL)
+    (tpl_dir / "gallery.html").write_text(GALLERY_TPL)
     return jinja2.Environment(
         loader=jinja2.FileSystemLoader(str(tmp_path)),
         autoescape=True,
@@ -154,3 +163,98 @@ class TestShortcodeErrors:
         (src / "photo.jpg").write_bytes(b"fake")
         with pytest.raises(GalleryError, match="Missing template"):
             expand_shortcodes("<<photo.jpg>>", env, src)
+
+    def test_unknown_directive(self, env, src):
+        with pytest.raises(GalleryError, match="Unknown shortcode directive"):
+            expand_shortcodes("<<unknown>>", env, src)
+
+
+class TestGalleryShortcode:
+    def test_basic_listing(self, env, src):
+        (src / "alpha.jpg").write_bytes(b"fake")
+        (src / "beta.png").write_bytes(b"fake")
+        result = expand_shortcodes("<<gallery>>", env, src)
+        assert "alpha.jpg:alpha.html" in result
+        assert "beta.png:beta.html" in result
+
+    def test_sort_name(self, env, src):
+        (src / "cherry.jpg").write_bytes(b"fake")
+        (src / "apple.jpg").write_bytes(b"fake")
+        (src / "banana.jpg").write_bytes(b"fake")
+        result = expand_shortcodes("<<gallery sort=name>>", env, src)
+        assert (
+            result
+            == "apple.jpg:apple.html,banana.jpg:banana.html,cherry.jpg:cherry.html"
+        )
+
+    def test_sort_name_reverse(self, env, src):
+        (src / "cherry.jpg").write_bytes(b"fake")
+        (src / "apple.jpg").write_bytes(b"fake")
+        result = expand_shortcodes("<<gallery sort=name reverse>>", env, src)
+        assert result == "cherry.jpg:cherry.html,apple.jpg:apple.html"
+
+    def test_sort_date(self, env, src):
+        import os
+        import time
+
+        (src / "old.jpg").write_bytes(b"fake")
+        old_time = time.time() - 100
+        os.utime(src / "old.jpg", (old_time, old_time))
+        (src / "new.jpg").write_bytes(b"fake")
+        result = expand_shortcodes("<<gallery sort=date>>", env, src)
+        assert result == "old.jpg:old.html,new.jpg:new.html"
+
+    def test_sort_date_reverse(self, env, src):
+        import os
+        import time
+
+        (src / "old.jpg").write_bytes(b"fake")
+        old_time = time.time() - 100
+        os.utime(src / "old.jpg", (old_time, old_time))
+        (src / "new.jpg").write_bytes(b"fake")
+        result = expand_shortcodes("<<gallery sort=date reverse>>", env, src)
+        assert result == "new.jpg:new.html,old.jpg:old.html"
+
+    def test_filter(self, env, src):
+        (src / "photo.jpg").write_bytes(b"fake")
+        (src / "photo.png").write_bytes(b"fake")
+        result = expand_shortcodes("<<gallery filter=*.jpg>>", env, src)
+        assert "photo.jpg:photo.html" in result
+        assert "photo.png" not in result
+
+    def test_path_subdirectory(self, env, src):
+        sub = src / "photos"
+        sub.mkdir()
+        (sub / "sunset.jpg").write_bytes(b"fake")
+        result = expand_shortcodes("<<gallery path=photos>>", env, src)
+        assert "sunset.jpg:sunset.html" in result
+
+    def test_path_relative_in_output(self, env, src):
+        sub = src / "photos"
+        sub.mkdir()
+        (sub / "sunset.jpg").write_bytes(b"fake")
+        # The path in context should be relative to source_dir
+        gallery_tpl = "{% for image in images %}{{ image.path }}{% endfor %}"
+        tpl_dir = env.loader.searchpath[0]  # type: ignore[union-attr]
+        (Path(tpl_dir) / "shortcodes" / "gallery.html").write_text(gallery_tpl)
+        result = expand_shortcodes("<<gallery path=photos>>", env, src)
+        assert result == "photos/sunset.jpg"
+
+    def test_empty_directory(self, env, src):
+        result = expand_shortcodes("<<gallery>>", env, src)
+        assert result == ""
+
+    def test_missing_directory(self, env, src):
+        with pytest.raises(GalleryError, match="Gallery directory not found"):
+            expand_shortcodes("<<gallery path=nonexistent>>", env, src)
+
+    def test_unknown_sort_key(self, env, src):
+        with pytest.raises(GalleryError, match="Unknown gallery sort key"):
+            expand_shortcodes("<<gallery sort=size>>", env, src)
+
+    def test_ignores_non_image_files(self, env, src):
+        (src / "photo.jpg").write_bytes(b"fake")
+        (src / "readme.txt").write_text("hello")
+        result = expand_shortcodes("<<gallery>>", env, src)
+        assert "photo.jpg" in result
+        assert "readme.txt" not in result

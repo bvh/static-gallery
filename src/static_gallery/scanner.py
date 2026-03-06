@@ -6,14 +6,14 @@ from pathlib import Path
 from static_gallery.model import Node, NodeType
 
 
-_IMAGE_EXTENSIONS = {".jpeg", ".jpg", ".webp", ".png"}
+IMAGE_EXTENSIONS = {".jpeg", ".jpg", ".webp", ".png"}
 
 
 def _classify(path: Path) -> NodeType:
     ext = path.suffix.lower()
     if ext == ".md":
         return NodeType.MARKDOWN
-    if ext in _IMAGE_EXTENSIONS:
+    if ext in IMAGE_EXTENSIONS:
         return NodeType.IMAGE
     return NodeType.STATIC
 
