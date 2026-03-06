@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from static_gallery.errors import error
+from static_gallery.errors import GalleryError
 
 
 def _parse_line(line: str, *, allow_comments: bool) -> tuple[str, str] | None:
@@ -12,7 +12,7 @@ def _parse_line(line: str, *, allow_comments: bool) -> tuple[str, str] | None:
     if allow_comments and stripped.startswith("#"):
         return None
     if ":" not in stripped:
-        error(f"Malformed line (no colon): {line.rstrip()}")
+        raise GalleryError(f"Malformed line (no colon): {line.rstrip()}")
     key, _, value = stripped.partition(":")
     return key.strip().lower(), value.strip()
 
@@ -21,7 +21,7 @@ def parse_config(path: Path) -> dict[str, str]:
     try:
         text = path.read_text(encoding="utf-8")
     except OSError as exc:
-        error(f"Cannot read config file: {exc}")
+        raise GalleryError(f"Cannot read config file: {exc}")
 
     config: dict[str, str] = {}
     for line in text.splitlines():
@@ -33,7 +33,7 @@ def parse_config(path: Path) -> dict[str, str]:
 
     for required in ("title", "url", "language"):
         if required not in config:
-            error(f"Missing required config key: {required}")
+            raise GalleryError(f"Missing required config key: {required}")
 
     return config
 

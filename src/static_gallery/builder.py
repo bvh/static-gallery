@@ -8,7 +8,7 @@ from markupsafe import Markup
 import mistletoe
 
 from static_gallery.config import parse_front_matter
-from static_gallery.errors import error
+from static_gallery.errors import GalleryError
 from static_gallery.model import Node, NodeType
 
 
@@ -61,7 +61,7 @@ def build(
             autoescape=True,
         )
     except Exception as exc:
-        error(f"Cannot load templates from {theme_dir}: {exc}")
+        raise GalleryError(f"Cannot load templates from {theme_dir}: {exc}")
 
     expected: set[Path] = set()
     _build_node(tree, site_config, env, target, expected)
@@ -97,9 +97,9 @@ def _load_template(env: jinja2.Environment, name: str) -> jinja2.Template:
     try:
         return env.get_template(f"{name}.html")
     except jinja2.TemplateNotFound:
-        error(f"Missing template: .theme/{name}.html")
+        raise GalleryError(f"Missing template: .theme/{name}.html")
     except jinja2.TemplateSyntaxError as exc:
-        error(f"Template syntax error in .theme/{name}.html: {exc}")
+        raise GalleryError(f"Template syntax error in .theme/{name}.html: {exc}")
 
 
 def _build_markdown(
@@ -111,7 +111,7 @@ def _build_markdown(
     try:
         text = node.source.read_text(encoding="utf-8")
     except OSError as exc:
-        error(f"Cannot read {node.source}: {exc}")
+        raise GalleryError(f"Cannot read {node.source}: {exc}")
 
     metadata, body = parse_front_matter(text)
     html_content = mistletoe.markdown(body)
@@ -127,7 +127,7 @@ def _build_markdown(
     try:
         html_target.write_text(output, encoding="utf-8")
     except OSError as exc:
-        error(f"Cannot write {html_target}: {exc}")
+        raise GalleryError(f"Cannot write {html_target}: {exc}")
 
 
 def _build_image(
@@ -150,12 +150,12 @@ def _build_image(
     try:
         html_target.write_text(output, encoding="utf-8")
     except OSError as exc:
-        error(f"Cannot write {html_target}: {exc}")
+        raise GalleryError(f"Cannot write {html_target}: {exc}")
 
     try:
         shutil.copy2(node.source, asset_target)
     except OSError as exc:
-        error(f"Cannot copy {node.source} to {asset_target}: {exc}")
+        raise GalleryError(f"Cannot copy {node.source} to {asset_target}: {exc}")
 
 
 def _build_static(node: Node, asset_target: Path) -> None:
@@ -163,7 +163,7 @@ def _build_static(node: Node, asset_target: Path) -> None:
     try:
         shutil.copy2(node.source, asset_target)
     except OSError as exc:
-        error(f"Cannot copy {node.source} to {asset_target}: {exc}")
+        raise GalleryError(f"Cannot copy {node.source} to {asset_target}: {exc}")
 
 
 def _sync_target(target: Path, expected_paths: set[Path]) -> None:

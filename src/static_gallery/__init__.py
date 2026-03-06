@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from static_gallery.config import parse_config
-from static_gallery.errors import error, GalleryError
+from static_gallery.errors import GalleryError
 from static_gallery.scanner import scan
 from static_gallery.builder import build
 
@@ -39,7 +39,7 @@ def main() -> None:
     try:
         source = args.source.resolve()
         if not source.is_dir():
-            error(f"Source directory does not exist: {source}")
+            raise GalleryError(f"Source directory does not exist: {source}")
 
         target = (args.target or source / ".public").resolve()
         config_path = (args.config or source / "site.conf").resolve()
