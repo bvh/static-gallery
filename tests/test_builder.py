@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 from static_gallery.builder import build
 from static_gallery.errors import GalleryError
-from static_gallery.model import FileType, SourceDir, SourceFile
+from static_gallery.model import Node, NodeType
 
 
 PAGE_TEMPLATE = "<html><head><title>{{ page.title }}</title></head><body>{{ content }}</body></html>"
@@ -20,8 +20,16 @@ def _site_config():
     return {"title": "Test Site", "url": "https://example.com/", "language": "en-us"}
 
 
-def _wrap(files):
-    return SourceDir(rel_path=Path("."), files=files)
+def _make_tree(*children):
+    root = Node(node_type=None, name="", source=None, parent=None)
+    for c in children:
+        c.parent = root
+        root.children.append(c)
+    return root
+
+
+def _make_child(node_type, name, source, parent=None):
+    return Node(node_type=node_type, name=name, source=source, parent=parent)
 
 
 class TestBuildMarkdown:
@@ -35,11 +43,10 @@ class TestBuildMarkdown:
         md_file = source / "index.md"
         md_file.write_text("Title: Home\n\nHello **world**.")
 
-        tree = _wrap([SourceFile(
-            FileType.MARKDOWN, md_file, Path("index.md"),
-            html_target=target / "index.html",
-        )])
-        build(tree, _site_config(), source, target)
+        root = _make_tree()
+        root.node_type = NodeType.MARKDOWN
+        root.source = md_file
+        build(root, _site_config(), source, target)
 
         output = (target / "index.html").read_text()
         assert "<title>Home</title>" in output
@@ -56,10 +63,9 @@ class TestBuildMarkdown:
         md_file = source / "test.md"
         md_file.write_text("Author: Jane\n\nHi.")
 
-        tree = _wrap([SourceFile(
-            FileType.MARKDOWN, md_file, Path("test.md"),
-            html_target=target / "test.html",
-        )])
+        tree = _make_tree(
+            _make_child(NodeType.MARKDOWN, "test", md_file),
+        )
         build(tree, _site_config(), source, target)
 
         output = (target / "test.html").read_text()
@@ -77,10 +83,9 @@ class TestBuildMarkdown:
         md_file = source / "gallery.md"
         md_file.write_text("Type: image\nTitle: Gallery\n\nSome content.")
 
-        tree = _wrap([SourceFile(
-            FileType.MARKDOWN, md_file, Path("gallery.md"),
-            html_target=target / "gallery.html",
-        )])
+        tree = _make_tree(
+            _make_child(NodeType.MARKDOWN, "gallery", md_file),
+        )
         build(tree, _site_config(), source, target)
 
         output = (target / "gallery.html").read_text()
@@ -96,10 +101,9 @@ class TestBuildMarkdown:
         md_file = source / "plain.md"
         md_file.write_text("Just some text.")
 
-        tree = _wrap([SourceFile(
-            FileType.MARKDOWN, md_file, Path("plain.md"),
-            html_target=target / "plain.html",
-        )])
+        tree = _make_tree(
+            _make_child(NodeType.MARKDOWN, "plain", md_file),
+        )
         build(tree, _site_config(), source, target)
 
         output = (target / "plain.html").read_text()
@@ -117,11 +121,9 @@ class TestBuildImage:
         img_file = source / "photo.jpg"
         img_file.write_bytes(b"fake image data")
 
-        tree = _wrap([SourceFile(
-            FileType.IMAGE, img_file, Path("photo.jpg"),
-            html_target=target / "photo.html",
-            asset_target=target / "photo.jpg",
-        )])
+        tree = _make_tree(
+            _make_child(NodeType.IMAGE, "photo", img_file),
+        )
         build(tree, _site_config(), source, target)
 
         html = (target / "photo.html").read_text()
@@ -140,11 +142,9 @@ class TestBuildImage:
         img_file = source / "my-cool_photo.png"
         img_file.write_bytes(b"fake")
 
-        tree = _wrap([SourceFile(
-            FileType.IMAGE, img_file, Path("my-cool_photo.png"),
-            html_target=target / "my-cool_photo.html",
-            asset_target=target / "my-cool_photo.png",
-        )])
+        tree = _make_tree(
+            _make_child(NodeType.IMAGE, "my-cool_photo", img_file),
+        )
         build(tree, _site_config(), source, target)
 
         html = (target / "my-cool_photo.html").read_text()
@@ -162,10 +162,9 @@ class TestBuildStatic:
         css_file = source / "styles.css"
         css_file.write_text("body { color: red; }")
 
-        tree = _wrap([SourceFile(
-            FileType.STATIC, css_file, Path("styles.css"),
-            asset_target=target / "styles.css",
-        )])
+        tree = _make_tree(
+            _make_child(NodeType.STATIC, "styles", css_file),
+        )
         build(tree, _site_config(), source, target)
 
         assert (target / "styles.css").read_text() == "body { color: red; }"
@@ -181,10 +180,11 @@ class TestBuildStatic:
         js_file.parent.mkdir(parents=True)
         js_file.write_text("console.log('hi')")
 
-        tree = _wrap([SourceFile(
-            FileType.STATIC, js_file, Path("assets/app.js"),
-            asset_target=target / "assets" / "app.js",
-        )])
+        # Need intermediate container node for "assets"
+        assets_dir = Node(node_type=None, name="assets", source=None, parent=None)
+        child = _make_child(NodeType.STATIC, "app", js_file, parent=assets_dir)
+        assets_dir.children.append(child)
+        tree = _make_tree(assets_dir)
         build(tree, _site_config(), source, target)
 
         assert (target / "assets" / "app.js").read_text() == "console.log('hi')"
@@ -204,11 +204,10 @@ class TestTargetSync:
         md_file = source / "index.md"
         md_file.write_text("Title: Home\n\nHello.")
 
-        tree = _wrap([SourceFile(
-            FileType.MARKDOWN, md_file, Path("index.md"),
-            html_target=target / "index.html",
-        )])
-        build(tree, _site_config(), source, target)
+        root = _make_tree()
+        root.node_type = NodeType.MARKDOWN
+        root.source = md_file
+        build(root, _site_config(), source, target)
 
         assert not stale.exists()
         assert (target / "index.html").exists()
@@ -227,11 +226,10 @@ class TestTargetSync:
         md_file = source / "index.md"
         md_file.write_text("Title: Home\n\nHello.")
 
-        tree = _wrap([SourceFile(
-            FileType.MARKDOWN, md_file, Path("index.md"),
-            html_target=target / "index.html",
-        )])
-        build(tree, _site_config(), source, target)
+        root = _make_tree()
+        root.node_type = NodeType.MARKDOWN
+        root.source = md_file
+        build(root, _site_config(), source, target)
 
         assert not stale_dir.exists()
 
@@ -242,7 +240,7 @@ class TestTargetSync:
         target.mkdir()
         _setup_theme(source)
 
-        build(_wrap([]), _site_config(), source, target)
+        build(_make_tree(), _site_config(), source, target)
 
         assert target.exists()
 
@@ -257,12 +255,11 @@ class TestBuildErrors:
         md_file = source / "index.md"
         md_file.write_text("Title: Home\n\nHello.")
 
-        tree = _wrap([SourceFile(
-            FileType.MARKDOWN, md_file, Path("index.md"),
-            html_target=target / "index.html",
-        )])
+        root = _make_tree()
+        root.node_type = NodeType.MARKDOWN
+        root.source = md_file
         with pytest.raises(GalleryError):
-            build(tree, _site_config(), source, target)
+            build(root, _site_config(), source, target)
 
     def test_unreadable_source_exits(self, tmp_path):
         source = tmp_path / "source"
@@ -272,9 +269,8 @@ class TestBuildErrors:
         _setup_theme(source)
 
         missing = source / "gone.md"
-        tree = _wrap([SourceFile(
-            FileType.MARKDOWN, missing, Path("gone.md"),
-            html_target=target / "gone.html",
-        )])
+        tree = _make_tree(
+            _make_child(NodeType.MARKDOWN, "gone", missing),
+        )
         with pytest.raises(GalleryError):
             build(tree, _site_config(), source, target)
