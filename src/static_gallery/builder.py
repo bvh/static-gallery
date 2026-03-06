@@ -6,7 +6,8 @@ from pathlib import Path
 import jinja2
 import mistletoe
 
-from static_gallery.config import error, parse_front_matter
+from static_gallery.config import parse_front_matter
+from static_gallery.errors import error
 from static_gallery.scanner import BuildTask, TaskType
 
 

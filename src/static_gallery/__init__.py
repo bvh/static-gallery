@@ -3,7 +3,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from static_gallery.config import error, parse_config
+from static_gallery.config import parse_config
+from static_gallery.errors import error
 from static_gallery.scanner import scan
 from static_gallery.builder import build
 

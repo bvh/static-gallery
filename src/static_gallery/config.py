@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-import sys
 from pathlib import Path
-from typing import NoReturn
 
-
-def error(msg: str) -> NoReturn:
-    print(msg, file=sys.stderr)
-    sys.exit(1)
+from static_gallery.errors import error
 
 
 def _parse_line(line: str, *, allow_comments: bool) -> tuple[str, str] | None:
