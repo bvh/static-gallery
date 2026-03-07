@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+from typing import Any
 
 import jinja2
 from markupsafe import Markup
 import mistletoe
 
 from static_gallery.config import parse_front_matter
+from static_gallery.metadata import read_image_metadata, resolve_alt, resolve_title
 from static_gallery.shortcodes import expand_shortcodes
 from static_gallery.errors import GalleryError
 from static_gallery.model import Node, NodeType
@@ -103,6 +105,7 @@ def build(
         global_mtime = _compute_global_mtime(source, config_path)
 
     expected: set[Path] = set()
+    meta_cache: dict[Path, dict[str, dict]] = {}
     _build_node(
         tree,
         site_config,
@@ -112,6 +115,7 @@ def build(
         global_mtime,
         source=source,
         listing_template=listing_template,
+        meta_cache=meta_cache,
     )
     _sync_target(target, expected)
 
@@ -126,6 +130,7 @@ def _build_node(
     *,
     source: Path,
     listing_template: jinja2.Template | None = None,
+    meta_cache: dict[Path, dict[str, dict]],
 ) -> None:
     has_listing = listing_template is not None
     html_target, asset_target = _target_paths(node, target, has_listing=has_listing)
@@ -150,6 +155,7 @@ def _build_node(
                 asset_target,
                 site_config,
                 env,
+                meta_cache,
                 skip_html=skip_html,
                 skip_asset=skip_asset,
             )
@@ -159,7 +165,7 @@ def _build_node(
     elif node.node_type is None and node.children and listing_template is not None:
         source_dir = source / Path(*_node_segments(node)) if node.name else source
         if not _is_up_to_date(html_target, source_dir, global_mtime, is_html=True):
-            _build_listing(node, html_target, site_config, listing_template)
+            _build_listing(node, html_target, site_config, listing_template, meta_cache)
 
     for child in node.children:
         _build_node(
@@ -171,6 +177,7 @@ def _build_node(
             global_mtime,
             source=source,
             listing_template=listing_template,
+            meta_cache=meta_cache,
         )
 
 
@@ -192,10 +199,20 @@ def _try_load_template(env: jinja2.Environment, name: str) -> jinja2.Template | 
         raise GalleryError(f"Template syntax error in .theme/{name}.html: {exc}")
 
 
-def _collect_children_data(node: Node) -> dict[str, list[dict[str, str]]]:
-    directories: list[dict[str, str]] = []
-    pages: list[dict[str, str]] = []
-    images: list[dict[str, str]] = []
+def _get_image_metadata(
+    path: Path, cache: dict[Path, dict[str, dict]]
+) -> dict[str, dict]:
+    if path not in cache:
+        cache[path] = read_image_metadata(path)
+    return cache[path]
+
+
+def _collect_children_data(
+    node: Node, meta_cache: dict[Path, dict[str, dict]]
+) -> dict[str, list[dict[str, Any]]]:
+    directories: list[dict[str, Any]] = []
+    pages: list[dict[str, Any]] = []
+    images: list[dict[str, Any]] = []
 
     for child in node.children:
         if child.node_type is None and child.children:
@@ -216,13 +233,18 @@ def _collect_children_data(node: Node) -> dict[str, list[dict[str, str]]]:
                 )
         elif child.node_type == NodeType.IMAGE:
             stem = child.source.stem
+            image_meta = _get_image_metadata(child.source, meta_cache)
+            title = resolve_title(stem, image_meta)
+            alt = resolve_alt(stem, image_meta)
             images.append(
                 {
                     "filename": child.source.name,
                     "stem": stem,
-                    "alt": stem.replace("-", " ").replace("_", " "),
+                    "title": title,
+                    "alt": alt,
                     "url": child.name + ".html",
                     "src": child.source.name,
+                    **image_meta,
                 }
             )
 
@@ -234,8 +256,9 @@ def _build_listing(
     html_target: Path,
     site_config: dict[str, str],
     listing_template: jinja2.Template,
+    meta_cache: dict[Path, dict[str, dict]],
 ) -> None:
-    children_data = _collect_children_data(node)
+    children_data = _collect_children_data(node, meta_cache)
     if node.name:
         title = node.name.replace("-", " ").replace("_", " ").title()
     else:
@@ -289,16 +312,18 @@ def _build_image(
     asset_target: Path,
     site_config: dict[str, str],
     env: jinja2.Environment,
+    meta_cache: dict[Path, dict[str, dict]],
     *,
     skip_html: bool = False,
     skip_asset: bool = False,
 ) -> None:
     if not skip_html:
         stem = node.source.stem
-        title = stem.replace("-", " ").replace("_", " ").title()
         filename = node.source.name
+        image_meta = _get_image_metadata(node.source, meta_cache)
+        title = resolve_title(stem, image_meta)
 
-        metadata = {"title": title, "src": filename}
+        metadata = {"title": title, "src": filename, **image_meta}
         template = _load_template(env, "image")
 
         output = template.render(site=site_config, page=metadata, content=filename)

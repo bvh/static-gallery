@@ -1,4 +1,6 @@
 import os
+from unittest.mock import patch
+
 import pytest
 from static_gallery.builder import build
 from static_gallery.errors import GalleryError
@@ -706,3 +708,111 @@ class TestAutoIndex:
         # Second build — listing should survive sync
         build(tree, _site_config(), source, target)
         assert (target / "photos" / "index.html").exists()
+
+
+MOCK_METADATA = {
+    "exif": {"ISO": "400", "FocalLength": "200mm"},
+    "iptc": {"ObjectName": "Sunset Over Water", "City": "Portland"},
+    "xmp": {
+        "AltTextAccessibility": {'lang="x-default"': "A golden sunset over the river"}
+    },
+}
+
+
+class TestImageMetadata:
+    def test_image_page_uses_iptc_title(self, tmp_path):
+        source = tmp_path / "source"
+        target = tmp_path / "target"
+        source.mkdir()
+        target.mkdir()
+        _setup_theme(source)
+
+        img_file = source / "sunset.jpg"
+        img_file.write_bytes(b"fake image data")
+
+        tree = _make_tree(
+            _make_child(NodeType.IMAGE, "sunset", img_file),
+        )
+
+        with patch(
+            "static_gallery.builder.read_image_metadata", return_value=MOCK_METADATA
+        ):
+            build(tree, _site_config(), source, target)
+
+        html = (target / "sunset.html").read_text()
+        assert "<title>Sunset Over Water</title>" in html
+
+    def test_image_page_metadata_in_template(self, tmp_path):
+        source = tmp_path / "source"
+        target = tmp_path / "target"
+        source.mkdir()
+        target.mkdir()
+        tpl = "{{ page.title }}|{{ page.iptc.City }}|{{ page.exif.ISO }}"
+        _setup_theme(source, image=tpl)
+
+        img_file = source / "sunset.jpg"
+        img_file.write_bytes(b"fake image data")
+
+        tree = _make_tree(
+            _make_child(NodeType.IMAGE, "sunset", img_file),
+        )
+
+        with patch(
+            "static_gallery.builder.read_image_metadata", return_value=MOCK_METADATA
+        ):
+            build(tree, _site_config(), source, target)
+
+        output = (target / "sunset.html").read_text()
+        assert "Sunset Over Water" in output
+        assert "Portland" in output
+        assert "400" in output
+
+    def test_listing_uses_metadata_title_and_alt(self, tmp_path):
+        source = tmp_path / "source"
+        target = tmp_path / "target"
+        source.mkdir()
+        target.mkdir()
+        listing = "{% for i in children.images %}{{ i.title }}|{{ i.alt }}{% endfor %}"
+        _setup_theme(source, listing=listing)
+
+        (source / "photos").mkdir()
+        img_file = source / "photos" / "sunset.jpg"
+        img_file.write_bytes(b"fake image data")
+
+        photos = Node(node_type=None, name="photos", source=None, parent=None)
+        photos.children.append(
+            _make_child(NodeType.IMAGE, "sunset", img_file, parent=photos)
+        )
+        tree = _make_tree(photos)
+
+        with patch(
+            "static_gallery.builder.read_image_metadata", return_value=MOCK_METADATA
+        ):
+            build(tree, _site_config(), source, target)
+
+        content = (target / "photos" / "index.html").read_text()
+        assert "Sunset Over Water" in content
+        assert "A golden sunset over the river" in content
+
+    def test_falls_back_to_stem_without_metadata(self, tmp_path):
+        source = tmp_path / "source"
+        target = tmp_path / "target"
+        source.mkdir()
+        target.mkdir()
+        _setup_theme(source)
+
+        img_file = source / "my-cool_photo.png"
+        img_file.write_bytes(b"fake")
+
+        tree = _make_tree(
+            _make_child(NodeType.IMAGE, "my-cool_photo", img_file),
+        )
+
+        empty_meta = {"exif": {}, "iptc": {}, "xmp": {}}
+        with patch(
+            "static_gallery.builder.read_image_metadata", return_value=empty_meta
+        ):
+            build(tree, _site_config(), source, target)
+
+        html = (target / "my-cool_photo.html").read_text()
+        assert "<title>My Cool Photo</title>" in html
