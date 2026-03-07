@@ -82,9 +82,11 @@ def _parse_options(raw: str | None) -> dict[str, str | bool]:
 
 def _expand_gallery(
     raw_opts: str | None,
+    *,
     env: jinja2.Environment,
     source_dir: Path,
     meta_cache: dict[Path, dict[str, dict]],
+    resolved_root: Path | None = None,
 ) -> str:
     opts = _parse_options(raw_opts)
     sort_key = opts.get("sort", "name")
@@ -95,6 +97,12 @@ def _expand_gallery(
     rel_path = opts.get("path")
 
     target_dir = source_dir / rel_path if rel_path else source_dir
+    if (
+        rel_path
+        and resolved_root is not None
+        and not target_dir.resolve().is_relative_to(resolved_root)
+    ):
+        raise GalleryError(f"Shortcode path escapes source tree: {rel_path}")
     if not target_dir.is_dir():
         raise GalleryError(f"Gallery directory not found: {target_dir}")
 
@@ -153,9 +161,11 @@ def expand_shortcodes(
     env: jinja2.Environment,
     source_dir: Path,
     meta_cache: dict[Path, dict[str, dict]] | None = None,
+    source_root: Path | None = None,
 ) -> str:
     if meta_cache is None:
         meta_cache = {}
+    resolved_root = source_root.resolve() if source_root is not None else None
 
     def _replace(match: re.Match) -> str:
         path_str = match.group(1)
@@ -165,7 +175,13 @@ def expand_shortcodes(
             handler = _DIRECTIVE_HANDLERS.get(path_str)
             if handler is None:
                 raise GalleryError(f"Unknown shortcode directive: {path_str}")
-            return handler(raw_opts, env, source_dir, meta_cache)
+            return handler(
+                raw_opts,
+                env=env,
+                source_dir=source_dir,
+                meta_cache=meta_cache,
+                resolved_root=resolved_root,
+            )
 
         alt = raw_opts
         pp = PurePosixPath(path_str)
@@ -176,6 +192,10 @@ def expand_shortcodes(
             raise GalleryError(f"Unknown shortcode file type: {path_str}")
 
         resolved = source_dir / path_str
+        if resolved_root is not None and not resolved.resolve().is_relative_to(
+            resolved_root
+        ):
+            raise GalleryError(f"Shortcode path escapes source tree: {path_str}")
         if not resolved.is_file():
             raise GalleryError(f"Shortcode file not found: {resolved}")
 

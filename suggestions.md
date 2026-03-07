@@ -6,17 +6,17 @@
 
 ~~The scanner now detects duplicate image stems per directory and raises `GalleryError` listing the conflicting files. Images demoted to STATIC by markdown collision are excluded from the check. Case-insensitive.~~
 
-### Path traversal in shortcodes
+### ~~Path traversal in shortcodes~~ (Fixed)
 
-`expand_shortcodes` resolves `source_dir / path_str` with no confinement check. A shortcode like `<<../../etc/passwd.txt>>` would read files outside the source tree. After resolving, verify that the result is still within the source root (e.g. `resolved.resolve().is_relative_to(source_root)`).
+~~`expand_shortcodes` resolves `source_dir / path_str` with no confinement check. A shortcode like `<<../../etc/passwd.txt>>` would read files outside the source tree. After resolving, verify that the result is still within the source root (e.g. `resolved.resolve().is_relative_to(source_root)`).~~
 
 ### Custom --target inside source causes feedback loop
 
 A user running `--target ./output` (no dot prefix) means the scanner will pick up previously-built HTML as source files on the next run. The default `.public` is safe because dotdirs are excluded, but nothing prevents a non-dot target inside source. Either warn/error when target is inside source without a dot prefix, or explicitly exclude the target path during scanning.
 
-### Gallery shortcode path option has same traversal issue
+### ~~Gallery shortcode path option has same traversal issue~~ (Fixed)
 
-`_expand_gallery` uses `source_dir / rel_path` for the `path=` option without verifying the result stays within the source tree. `<<gallery path=../../>>` would scan outside the source root.
+~~`_expand_gallery` uses `source_dir / rel_path` for the `path=` option without verifying the result stays within the source tree. `<<gallery path=../../>>` would scan outside the source root.~~
 
 ### Incremental build misses content dependencies
 

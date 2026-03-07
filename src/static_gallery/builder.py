@@ -148,7 +148,7 @@ def _build_node(
 
     if node.node_type == NodeType.MARKDOWN and node.source is not None:
         if not _is_up_to_date(html_target, node.source, global_mtime, is_html=True):
-            _build_markdown(node, html_target, site_config, env, meta_cache)
+            _build_markdown(node, html_target, site_config, env, meta_cache, source)
     elif node.node_type == NodeType.IMAGE:
         skip_html = _is_up_to_date(html_target, node.source, global_mtime, is_html=True)
         skip_asset = _is_up_to_date(
@@ -272,6 +272,7 @@ def _build_markdown(
     site_config: dict[str, str],
     env: jinja2.Environment,
     meta_cache: dict[Path, dict[str, dict]],
+    source_root: Path,
 ) -> None:
     try:
         text = node.source.read_text(encoding="utf-8")
@@ -279,7 +280,7 @@ def _build_markdown(
         raise GalleryError(f"Cannot read {node.source}: {exc}")
 
     metadata, body = parse_front_matter(text)
-    body = expand_shortcodes(body, env, node.source.parent, meta_cache)
+    body = expand_shortcodes(body, env, node.source.parent, meta_cache, source_root)
     html_content = mistletoe.markdown(body)
 
     template_type = metadata.get("type", "page")

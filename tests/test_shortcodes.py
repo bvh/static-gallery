@@ -55,7 +55,7 @@ class TestImageShortcodes:
     def test_basic(self, env, src):
         _img(src)
         assert (
-            expand_shortcodes("<<photo.jpg>>", env, src)
+            expand_shortcodes("<<photo.jpg>>", env, src, source_root=src)
             == '<img src="photo.jpg" alt="photo">'
         )
 
@@ -64,53 +64,57 @@ class TestImageShortcodes:
         sub.mkdir()
         _img(sub, "sunset.png")
         assert (
-            expand_shortcodes("<<photos/sunset.png>>", env, src)
+            expand_shortcodes("<<photos/sunset.png>>", env, src, source_root=src)
             == '<img src="photos/sunset.png" alt="sunset">'
         )
 
     def test_whitespace_tolerance(self, env, src):
         _img(src)
         assert (
-            expand_shortcodes("<< photo.jpg >>", env, src)
+            expand_shortcodes("<< photo.jpg >>", env, src, source_root=src)
             == '<img src="photo.jpg" alt="photo">'
         )
 
     def test_multiple_same_line(self, env, src):
         _img(src, "a.jpg")
         _img(src, "b.png")
-        result = expand_shortcodes("<<a.jpg>> and <<b.png>>", env, src)
+        result = expand_shortcodes("<<a.jpg>> and <<b.png>>", env, src, source_root=src)
         assert '<img src="a.jpg" alt="a">' in result
         assert '<img src="b.png" alt="b">' in result
 
     def test_multiple_separate_lines(self, env, src):
         _img(src, "a.jpg")
         _img(src, "b.png")
-        result = expand_shortcodes("<<a.jpg>>\n<<b.png>>", env, src)
+        result = expand_shortcodes("<<a.jpg>>\n<<b.png>>", env, src, source_root=src)
         assert '<img src="a.jpg" alt="a">' in result
         assert '<img src="b.png" alt="b">' in result
 
     def test_no_shortcodes(self, env, src):
         text = "Just some normal text."
-        assert expand_shortcodes(text, env, src) == text
+        assert expand_shortcodes(text, env, src, source_root=src) == text
 
     def test_auto_alt_dashes_underscores(self, env, src):
         _img(src, "my-cool_photo.jpg")
         assert (
-            expand_shortcodes("<<my-cool_photo.jpg>>", env, src)
+            expand_shortcodes("<<my-cool_photo.jpg>>", env, src, source_root=src)
             == '<img src="my-cool_photo.jpg" alt="my cool photo">'
         )
 
     def test_explicit_alt(self, env, src):
         _img(src, "sunset.png")
         assert (
-            expand_shortcodes("<<sunset.png A beautiful sunset>>", env, src)
+            expand_shortcodes(
+                "<<sunset.png A beautiful sunset>>", env, src, source_root=src
+            )
             == '<img src="sunset.png" alt="A beautiful sunset">'
         )
 
     def test_explicit_alt_with_padding(self, env, src):
         _img(src, "sunset.png")
         assert (
-            expand_shortcodes("<< sunset.png A beautiful sunset >>", env, src)
+            expand_shortcodes(
+                "<< sunset.png A beautiful sunset >>", env, src, source_root=src
+            )
             == '<img src="sunset.png" alt="A beautiful sunset">'
         )
 
@@ -118,7 +122,7 @@ class TestImageShortcodes:
 class TestCodeShortcodes:
     def test_inlines_content(self, env, src):
         (src / "hello.py").write_text("print('hello')")
-        result = expand_shortcodes("<<hello.py>>", env, src)
+        result = expand_shortcodes("<<hello.py>>", env, src, source_root=src)
         assert (
             '<pre><code class="language-python">print(&#39;hello&#39;)</code></pre>'
             in result
@@ -126,12 +130,12 @@ class TestCodeShortcodes:
 
     def test_language_mapping(self, env, src):
         (src / "app.js").write_text("const x = 1;")
-        result = expand_shortcodes("<<app.js>>", env, src)
+        result = expand_shortcodes("<<app.js>>", env, src, source_root=src)
         assert "language-javascript" in result
 
     def test_content_escaping(self, env, src):
         (src / "bad.html").write_text("<script>alert('xss')</script>")
-        result = expand_shortcodes("<<bad.html>>", env, src)
+        result = expand_shortcodes("<<bad.html>>", env, src, source_root=src)
         assert "<script>" not in result
         assert "&lt;script&gt;" in result
 
@@ -139,14 +143,14 @@ class TestCodeShortcodes:
 class TestTextShortcodes:
     def test_inlines_text(self, env, src):
         (src / "notes.txt").write_text("Some notes")
-        result = expand_shortcodes("<<notes.txt>>", env, src)
+        result = expand_shortcodes("<<notes.txt>>", env, src, source_root=src)
         assert "<pre>Some notes</pre>" in result
 
 
 class TestCsvShortcodes:
     def test_inlines_csv(self, env, src):
         (src / "data.csv").write_text("a,b\n1,2")
-        result = expand_shortcodes("<<data.csv>>", env, src)
+        result = expand_shortcodes("<<data.csv>>", env, src, source_root=src)
         assert "<pre>a,b\n1,2</pre>" in result
 
 
@@ -154,11 +158,11 @@ class TestShortcodeErrors:
     def test_unknown_extension(self, env, src):
         (src / "file.xyz").write_text("data")
         with pytest.raises(GalleryError, match="Unknown shortcode file type"):
-            expand_shortcodes("<<file.xyz>>", env, src)
+            expand_shortcodes("<<file.xyz>>", env, src, source_root=src)
 
     def test_missing_file(self, env, src):
         with pytest.raises(GalleryError, match="file not found"):
-            expand_shortcodes("<<missing.jpg>>", env, src)
+            expand_shortcodes("<<missing.jpg>>", env, src, source_root=src)
 
     def test_missing_template(self, src):
         env = jinja2.Environment(
@@ -167,11 +171,11 @@ class TestShortcodeErrors:
         )
         (src / "photo.jpg").write_bytes(b"fake")
         with pytest.raises(GalleryError, match="Missing template"):
-            expand_shortcodes("<<photo.jpg>>", env, src)
+            expand_shortcodes("<<photo.jpg>>", env, src, source_root=src)
 
     def test_unknown_directive(self, env, src):
         with pytest.raises(GalleryError, match="Unknown shortcode directive"):
-            expand_shortcodes("<<unknown>>", env, src)
+            expand_shortcodes("<<unknown>>", env, src, source_root=src)
 
 
 class TestGalleryShortcode:
@@ -179,7 +183,9 @@ class TestGalleryShortcode:
         mc = {}
         _img(src, "alpha.jpg", mc)
         _img(src, "beta.png", mc)
-        result = expand_shortcodes("<<gallery>>", env, src, meta_cache=mc)
+        result = expand_shortcodes(
+            "<<gallery>>", env, src, meta_cache=mc, source_root=src
+        )
         assert "alpha.jpg:alpha.html" in result
         assert "beta.png:beta.html" in result
 
@@ -188,7 +194,9 @@ class TestGalleryShortcode:
         _img(src, "cherry.jpg", mc)
         _img(src, "apple.jpg", mc)
         _img(src, "banana.jpg", mc)
-        result = expand_shortcodes("<<gallery sort=name>>", env, src, meta_cache=mc)
+        result = expand_shortcodes(
+            "<<gallery sort=name>>", env, src, meta_cache=mc, source_root=src
+        )
         assert (
             result
             == "apple.jpg:apple.html,banana.jpg:banana.html,cherry.jpg:cherry.html"
@@ -199,7 +207,7 @@ class TestGalleryShortcode:
         _img(src, "cherry.jpg", mc)
         _img(src, "apple.jpg", mc)
         result = expand_shortcodes(
-            "<<gallery sort=name reverse>>", env, src, meta_cache=mc
+            "<<gallery sort=name reverse>>", env, src, meta_cache=mc, source_root=src
         )
         assert result == "cherry.jpg:cherry.html,apple.jpg:apple.html"
 
@@ -212,7 +220,9 @@ class TestGalleryShortcode:
         old_time = time.time() - 100
         os.utime(src / "old.jpg", (old_time, old_time))
         _img(src, "new.jpg", mc)
-        result = expand_shortcodes("<<gallery sort=date>>", env, src, meta_cache=mc)
+        result = expand_shortcodes(
+            "<<gallery sort=date>>", env, src, meta_cache=mc, source_root=src
+        )
         assert result == "old.jpg:old.html,new.jpg:new.html"
 
     def test_sort_date_reverse(self, env, src):
@@ -225,7 +235,7 @@ class TestGalleryShortcode:
         os.utime(src / "old.jpg", (old_time, old_time))
         _img(src, "new.jpg", mc)
         result = expand_shortcodes(
-            "<<gallery sort=date reverse>>", env, src, meta_cache=mc
+            "<<gallery sort=date reverse>>", env, src, meta_cache=mc, source_root=src
         )
         assert result == "new.jpg:new.html,old.jpg:old.html"
 
@@ -233,7 +243,9 @@ class TestGalleryShortcode:
         mc = {}
         _img(src, "photo.jpg", mc)
         _img(src, "photo.png", mc)
-        result = expand_shortcodes("<<gallery filter=*.jpg>>", env, src, meta_cache=mc)
+        result = expand_shortcodes(
+            "<<gallery filter=*.jpg>>", env, src, meta_cache=mc, source_root=src
+        )
         assert "photo.jpg:photo.html" in result
         assert "photo.png" not in result
 
@@ -242,7 +254,9 @@ class TestGalleryShortcode:
         sub.mkdir()
         mc = {}
         _img(sub, "sunset.jpg", mc)
-        result = expand_shortcodes("<<gallery path=photos>>", env, src, meta_cache=mc)
+        result = expand_shortcodes(
+            "<<gallery path=photos>>", env, src, meta_cache=mc, source_root=src
+        )
         assert "sunset.jpg:sunset.html" in result
 
     def test_path_relative_in_output(self, env, src):
@@ -253,26 +267,36 @@ class TestGalleryShortcode:
         gallery_tpl = "{% for image in images %}{{ image.path }}{% endfor %}"
         tpl_dir = env.loader.searchpath[0]  # type: ignore[union-attr]
         (Path(tpl_dir) / "shortcodes" / "gallery.html").write_text(gallery_tpl)
-        result = expand_shortcodes("<<gallery path=photos>>", env, src, meta_cache=mc)
+        result = expand_shortcodes(
+            "<<gallery path=photos>>", env, src, meta_cache=mc, source_root=src
+        )
         assert result == "photos/sunset.jpg"
 
     def test_empty_directory(self, env, src):
-        result = expand_shortcodes("<<gallery>>", env, src, meta_cache={})
+        result = expand_shortcodes(
+            "<<gallery>>", env, src, meta_cache={}, source_root=src
+        )
         assert result == ""
 
     def test_missing_directory(self, env, src):
         with pytest.raises(GalleryError, match="Gallery directory not found"):
-            expand_shortcodes("<<gallery path=nonexistent>>", env, src, meta_cache={})
+            expand_shortcodes(
+                "<<gallery path=nonexistent>>", env, src, meta_cache={}, source_root=src
+            )
 
     def test_unknown_sort_key(self, env, src):
         with pytest.raises(GalleryError, match="Unknown gallery sort key"):
-            expand_shortcodes("<<gallery sort=size>>", env, src, meta_cache={})
+            expand_shortcodes(
+                "<<gallery sort=size>>", env, src, meta_cache={}, source_root=src
+            )
 
     def test_ignores_non_image_files(self, env, src):
         mc = {}
         _img(src, "photo.jpg", mc)
         (src / "readme.txt").write_text("hello")
-        result = expand_shortcodes("<<gallery>>", env, src, meta_cache=mc)
+        result = expand_shortcodes(
+            "<<gallery>>", env, src, meta_cache=mc, source_root=src
+        )
         assert "photo.jpg" in result
         assert "readme.txt" not in result
 
@@ -290,9 +314,58 @@ class TestGalleryShortcode:
         )
         tpl_dir = env.loader.searchpath[0]  # type: ignore[union-attr]
         (Path(tpl_dir) / "shortcodes" / "gallery.html").write_text(field_tpl)
-        result = expand_shortcodes("<<gallery>>", env, src, meta_cache=mc)
+        result = expand_shortcodes(
+            "<<gallery>>", env, src, meta_cache=mc, source_root=src
+        )
         assert "title=Sunset" in result
         assert "alt=sunset" in result
         assert "exif=True" in result
         assert "iptc=True" in result
         assert "xmp=True" in result
+
+
+class TestPathTraversal:
+    def test_file_shortcode_rejects_traversal(self, env, src):
+        with pytest.raises(GalleryError, match="escapes source tree"):
+            expand_shortcodes("<<../../etc/passwd.txt>>", env, src, source_root=src)
+
+    def test_gallery_path_rejects_traversal(self, env, src):
+        with pytest.raises(GalleryError, match="escapes source tree"):
+            expand_shortcodes(
+                "<<gallery path=../../>>", env, src, meta_cache={}, source_root=src
+            )
+
+    def test_file_shortcode_from_subdirectory(self, env, src):
+        sub = src / "pages"
+        sub.mkdir()
+        with pytest.raises(GalleryError, match="escapes source tree"):
+            expand_shortcodes("<<../../../etc/passwd.txt>>", env, sub, source_root=src)
+
+    def test_symlink_escape_rejected(self, env, src):
+        outside = src.parent / "outside"
+        outside.mkdir()
+        (outside / "secret.txt").write_text("secret")
+        link = src / "escape"
+        link.symlink_to(outside)
+        with pytest.raises(GalleryError, match="escapes source tree"):
+            expand_shortcodes("<<escape/secret.txt>>", env, src, source_root=src)
+
+    def test_gallery_symlink_escape_rejected(self, env, src):
+        outside = src.parent / "outside_gallery"
+        outside.mkdir()
+        link = src / "linked"
+        link.symlink_to(outside)
+        with pytest.raises(GalleryError, match="escapes source tree"):
+            expand_shortcodes(
+                "<<gallery path=linked>>", env, src, meta_cache={}, source_root=src
+            )
+
+    def test_subdirectory_is_allowed(self, env, src):
+        sub = src / "photos"
+        sub.mkdir()
+        mc = {}
+        _img(sub, "ok.jpg", mc)
+        result = expand_shortcodes(
+            "<<gallery path=photos>>", env, src, meta_cache=mc, source_root=src
+        )
+        assert "ok.jpg" in result
