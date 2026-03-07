@@ -2,25 +2,7 @@
 
 ## Bugs
 
-### ~~Same-stem images silently collide on HTML target~~ (Fixed)
 
-~~The scanner now detects duplicate image stems per directory and raises `GalleryError` listing the conflicting files. Images demoted to STATIC by markdown collision are excluded from the check. Case-insensitive.~~
-
-### ~~Path traversal in shortcodes~~ (Fixed)
-
-~~`expand_shortcodes` resolves `source_dir / path_str` with no confinement check. A shortcode like `<<../../etc/passwd.txt>>` would read files outside the source tree. After resolving, verify that the result is still within the source root (e.g. `resolved.resolve().is_relative_to(source_root)`).~~
-
-### ~~Custom --target inside source causes feedback loop~~ (Fixed)
-
-~~The target directory is now validated after resolution. Non-dotdir targets inside the source tree raise `GalleryError`. Dotdir targets (e.g. `.public`) and targets outside the source tree are allowed.~~
-
-### ~~Gallery shortcode path option has same traversal issue~~ (Fixed)
-
-~~`_expand_gallery` uses `source_dir / rel_path` for the `path=` option without verifying the result stays within the source tree. `<<gallery path=../../>>` would scan outside the source root.~~
-
-### ~~Incremental build misses content dependencies~~ (Fixed)
-
-~~Shortcodes can inline external files (code, text, csv), but the mtime check only considers the markdown source and the global mtime (templates + config). If an inlined file changes but the markdown file doesn't, the page won't be rebuilt. `shortcode_dependencies()` now scans markdown text for referenced files and gallery images; their mtimes are checked during incremental builds.~~
 
 ## Design
 
@@ -57,7 +39,3 @@ The test templates are duplicated across `test_builder.py` and `test_cli.py`. A 
 ### No tests for edge cases in `_sync_target` with symlinks or special files
 
 `_sync_target` uses `rglob("*")` and checks `is_file()` / `is_dir()`, but doesn't account for symlinks, sockets, or other non-regular files that might exist in the target. Unlikely in practice but worth a defensive check or test.
-
-### No tests for metadata stripping
-
-`copy_image_stripped` has a silent fallback (copies without stripping on failure), but there are no tests verifying that the kept/stripped metadata sets are correct, or that the fallback path works.

@@ -58,6 +58,12 @@ Current supported values are:
 **Title**: the title of the site
 **URL**: the base URL of the site
 **Language**: the locale and language code of the site (e.g. "en-us")
+**Source**: override the source directory (path relative to the config file
+or absolute)
+**Target**: override the target directory (path relative to the config file
+or absolute)
+**Theme**: override the theme directory (path relative to the source
+directory or absolute; default is `.theme`)
 
 Keys are case-insensitive (e.g., "title", "TITLE", and "TiTLe" all map to
 the same value).
