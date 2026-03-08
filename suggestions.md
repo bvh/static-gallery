@@ -6,9 +6,9 @@
 
 ## Design
 
-### Shortcode type map is a maintenance burden
+### ~~Shortcode type map is a maintenance burden~~ (done)
 
-`_SHORTCODE_TYPE_MAP` and `_LANGUAGE_MAP` in `shortcodes.py` must be kept in sync and extended for every new file type. Consider a fallback for unrecognized extensions (e.g. treat as generic text, or derive the template name directly from the extension) to make the system open for extension without modifying the map.
+Replaced `_SHORTCODE_TYPE_MAP` and `_LANGUAGE_MAP` with `_shortcode_type()` and `_language_for()` functions. Image extensions come from `IMAGE_EXTENSIONS`, `.txt`/`.csv` are explicit, and everything else falls back to "code". Language is derived from the extension with a small override map for names that differ (e.g. `.py` → `python`).
 
 ### The builder does too much
 

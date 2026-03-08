@@ -3,6 +3,7 @@ from __future__ import annotations
 import fnmatch
 import os
 import re
+import sys
 from pathlib import Path, PurePosixPath
 
 import jinja2
@@ -18,53 +19,48 @@ from static_gallery.model import IMAGE_EXTENSIONS
 
 _SHORTCODE_RE = re.compile(r"<<\s*([^\s>]+)(?:\s+(.+?))?\s*>>")
 
-_SHORTCODE_TYPE_MAP = {
-    ".jpeg": "image",
-    ".jpg": "image",
-    ".webp": "image",
-    ".png": "image",
-    ".gif": "image",
-    ".svg": "image",
-    ".py": "code",
-    ".js": "code",
-    ".ts": "code",
-    ".css": "code",
-    ".html": "code",
-    ".sh": "code",
-    ".json": "code",
-    ".yaml": "code",
-    ".yml": "code",
-    ".toml": "code",
-    ".xml": "code",
-    ".sql": "code",
-    ".rs": "code",
-    ".go": "code",
-    ".c": "code",
-    ".h": "code",
-    ".txt": "text",
-    ".csv": "csv",
-}
+_SHORTCODE_IMAGE_EXTENSIONS = IMAGE_EXTENSIONS | {".gif", ".svg"}
 
 _INLINE_TYPES = {"code", "text", "csv"}
 
-_LANGUAGE_MAP = {
+_LANGUAGE_OVERRIDES = {
     ".py": "python",
     ".js": "javascript",
     ".ts": "typescript",
-    ".css": "css",
-    ".html": "html",
     ".sh": "bash",
-    ".json": "json",
-    ".yaml": "yaml",
     ".yml": "yaml",
-    ".toml": "toml",
-    ".xml": "xml",
-    ".sql": "sql",
     ".rs": "rust",
-    ".go": "go",
-    ".c": "c",
     ".h": "c",
 }
+
+
+_KNOWN_CODE_EXTENSIONS = set(_LANGUAGE_OVERRIDES) | {
+    ".css",
+    ".html",
+    ".json",
+    ".yaml",
+    ".toml",
+    ".xml",
+    ".sql",
+    ".go",
+    ".c",
+}
+
+
+def _shortcode_type(ext: str) -> str:
+    """Derive the shortcode type from a file extension."""
+    if ext in _SHORTCODE_IMAGE_EXTENSIONS:
+        return "image"
+    if ext == ".txt":
+        return "text"
+    if ext == ".csv":
+        return "csv"
+    return "code"
+
+
+def _language_for(ext: str) -> str:
+    """Derive the language name from a file extension."""
+    return _LANGUAGE_OVERRIDES.get(ext, ext.lstrip("."))
 
 
 def _parse_options(raw: str | None) -> dict[str, str | bool]:
@@ -87,7 +83,7 @@ def _resolve_file_path(
 ) -> Path | None:
     """Resolve a shortcode file path, returning None if invalid or missing."""
     ext = PurePosixPath(path_str).suffix.lower()
-    if ext not in _SHORTCODE_TYPE_MAP:
+    if not ext:
         return None
     resolved = source_dir / path_str
     if resolved_root is not None and not resolved.resolve().is_relative_to(
@@ -272,9 +268,12 @@ def expand_shortcodes(
         pp = PurePosixPath(path_str)
         ext = pp.suffix.lower()
 
-        type_name = _SHORTCODE_TYPE_MAP.get(ext)
-        if type_name is None:
-            raise GalleryError(f"Unknown shortcode file type: {path_str}")
+        type_name = _shortcode_type(ext)
+        if type_name == "code" and ext not in _KNOWN_CODE_EXTENSIONS:
+            print(
+                f"Warning: unknown shortcode file type '{ext}', treating as code: {path_str}",
+                file=sys.stderr,
+            )
 
         resolved = source_dir / path_str
         if resolved_root is not None and not resolved.resolve().is_relative_to(
@@ -297,7 +296,7 @@ def expand_shortcodes(
                 context["content"] = resolved.read_text(encoding="utf-8")
             except OSError as exc:
                 raise GalleryError(f"Cannot read shortcode file {resolved}: {exc}")
-            context["language"] = _LANGUAGE_MAP.get(ext, "")
+            context["language"] = _language_for(ext)
 
         template_name = f"shortcodes/{type_name}.html"
         try:

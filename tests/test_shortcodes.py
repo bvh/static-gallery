@@ -155,10 +155,21 @@ class TestCsvShortcodes:
 
 
 class TestShortcodeErrors:
-    def test_unknown_extension(self, env, src):
+    def test_unknown_extension_falls_back_to_code(self, env, src):
         (src / "file.xyz").write_text("data")
-        with pytest.raises(GalleryError, match="Unknown shortcode file type"):
-            expand_shortcodes("<<file.xyz>>", env, src, source_root=src)
+        result = expand_shortcodes("<<file.xyz>>", env, src, source_root=src)
+        assert "language-xyz" in result
+        assert "data" in result
+
+    def test_unknown_extension_warns(self, env, src, capsys):
+        (src / "file.xyz").write_text("data")
+        expand_shortcodes("<<file.xyz>>", env, src, source_root=src)
+        assert "unknown shortcode file type '.xyz'" in capsys.readouterr().err
+
+    def test_known_code_extension_does_not_warn(self, env, src, capsys):
+        (src / "hello.py").write_text("print('hi')")
+        expand_shortcodes("<<hello.py>>", env, src, source_root=src)
+        assert capsys.readouterr().err == ""
 
     def test_missing_file(self, env, src):
         with pytest.raises(GalleryError, match="file not found"):
@@ -391,10 +402,10 @@ class TestShortcodeDependencies:
         deps = shortcode_dependencies("<<missing.py>>", src)
         assert deps == set()
 
-    def test_ignores_unknown_extensions(self, src):
+    def test_includes_unknown_extensions(self, src):
         (src / "file.xyz").write_text("")
         deps = shortcode_dependencies("<<file.xyz>>", src)
-        assert deps == set()
+        assert deps == {src / "file.xyz"}
 
     def test_gallery_deps_include_images(self, src):
         _img(src, "a.jpg")
