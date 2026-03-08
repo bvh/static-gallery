@@ -2,7 +2,8 @@ import os
 from unittest.mock import patch
 
 import pytest
-from static_gallery.builder import build, _sync_target
+from static_gallery.builder import build
+from static_gallery.sync import sync_target
 from static_gallery.errors import GalleryError
 from static_gallery.model import Node, NodeType
 
@@ -206,7 +207,8 @@ class TestTargetSync:
         md_file.write_text("Title: Home\n\nHello.")
 
         root = _make_index_tree(md_file)
-        build(root, _site_config(), source, target)
+        expected = build(root, _site_config(), source, target)
+        sync_target(target, expected)
 
         assert not stale.exists()
         assert (target / "index.html").exists()
@@ -226,7 +228,8 @@ class TestTargetSync:
         md_file.write_text("Title: Home\n\nHello.")
 
         root = _make_index_tree(md_file)
-        build(root, _site_config(), source, target)
+        expected = build(root, _site_config(), source, target)
+        sync_target(target, expected)
 
         assert not stale_dir.exists()
 
@@ -245,7 +248,8 @@ class TestTargetSync:
         md_file.write_text("Title: Home\n\nHello.")
 
         root = _make_index_tree(md_file)
-        build(root, _site_config(), source, target)
+        expected = build(root, _site_config(), source, target)
+        sync_target(target, expected)
 
         assert not (target / "old").exists()
 
@@ -256,7 +260,8 @@ class TestTargetSync:
         target.mkdir()
         _setup_theme(source)
 
-        build(_make_tree(), _site_config(), source, target)
+        expected = build(_make_tree(), _site_config(), source, target)
+        sync_target(target, expected)
 
         assert target.exists()
 
@@ -543,14 +548,16 @@ class TestIncrementalBuild:
 
         root = _make_index_tree(md)
 
-        build(root, _site_config(), source, target, config_path=conf)
+        expected = build(root, _site_config(), source, target, config_path=conf)
+        sync_target(target, expected)
 
         # Plant a stale file
         stale = target / "stale.html"
         stale.write_text("stale")
 
         # Rebuild (skips markdown because up-to-date) — stale should be removed
-        build(root, _site_config(), source, target, config_path=conf)
+        expected = build(root, _site_config(), source, target, config_path=conf)
+        sync_target(target, expected)
         assert not stale.exists()
         assert (target / "index.html").exists()
 
@@ -708,11 +715,13 @@ class TestAutoIndex:
         tree = _make_tree(photos)
 
         # First build
-        build(tree, _site_config(), source, target)
+        expected = build(tree, _site_config(), source, target)
+        sync_target(target, expected)
         assert (target / "photos" / "index.html").exists()
 
         # Second build — listing should survive sync
-        build(tree, _site_config(), source, target)
+        expected = build(tree, _site_config(), source, target)
+        sync_target(target, expected)
         assert (target / "photos" / "index.html").exists()
 
 
@@ -833,7 +842,7 @@ class TestSyncTargetSymlinks:
         link = target / "stale.txt"
         link.symlink_to(real_file)
 
-        _sync_target(target, set())
+        sync_target(target, set())
 
         assert not link.exists() and not link.is_symlink()
 
@@ -843,6 +852,6 @@ class TestSyncTargetSymlinks:
         link = target / "broken.txt"
         link.symlink_to(tmp_path / "nonexistent")
 
-        _sync_target(target, set())
+        sync_target(target, set())
 
         assert not link.is_symlink()

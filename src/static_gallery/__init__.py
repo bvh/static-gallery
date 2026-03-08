@@ -8,6 +8,7 @@ from static_gallery.config import parse_config
 from static_gallery.errors import GalleryError
 from static_gallery.scanner import scan
 from static_gallery.builder import build
+from static_gallery.sync import sync_target
 
 
 def main() -> None:
@@ -50,7 +51,7 @@ def main() -> None:
         config_filename = config_path.name if config_path.parent == source else None
         tree = scan(source, config_filename)
 
-        build(
+        expected = build(
             tree,
             site_config,
             source,
@@ -59,6 +60,7 @@ def main() -> None:
             force=args.force,
             theme_dir=theme_dir,
         )
+        sync_target(target, expected)
     except GalleryError as exc:
         print(exc, file=sys.stderr)
         sys.exit(1)
