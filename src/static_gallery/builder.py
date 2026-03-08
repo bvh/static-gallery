@@ -72,10 +72,8 @@ def _target_paths(
             return target / prefix / "index.html", None
         return None, None
 
-    is_index = node.source.name.lower() == "index.md"
-
     if node.node_type == NodeType.MARKDOWN:
-        if is_index:
+        if node.is_index:
             html = target / prefix / "index.html"
         else:
             html = target / prefix.parent / (node.name + ".html")
@@ -238,11 +236,8 @@ def _collect_children_data(
         if child.node_type is None and child.children:
             directories.append({"name": child.name, "url": child.name + "/"})
         elif child.node_type == NodeType.MARKDOWN:
-            is_index = (
-                child.source is not None and child.source.name.lower() == "index.md"
-            )
             title = stem_to_title(child.name)
-            url = child.name + ("/" if is_index else ".html")
+            url = child.name + ("/" if child.is_index else ".html")
             pages.append({"name": child.name, "title": title, "url": url})
         elif child.node_type == NodeType.IMAGE:
             stem = child.source.stem

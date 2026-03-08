@@ -21,3 +21,7 @@ class Node:
     source: Path | None
     parent: Node | None = field(default=None, repr=False)
     children: list[Node] = field(default_factory=list)
+
+    @property
+    def is_index(self) -> bool:
+        return self.source is not None and self.source.name.lower() == "index.md"

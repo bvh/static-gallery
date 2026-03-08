@@ -24,6 +24,13 @@ def _make_tree(*children):
     return root
 
 
+def _make_index_tree(source, *children):
+    root = _make_tree(*children)
+    root.node_type = NodeType.MARKDOWN
+    root.source = source
+    return root
+
+
 def _make_child(node_type, name, source, parent=None):
     return Node(node_type=node_type, name=name, source=source, parent=parent)
 
@@ -39,9 +46,7 @@ class TestBuildMarkdown:
         md_file = source / "index.md"
         md_file.write_text("Title: Home\n\nHello **world**.")
 
-        root = _make_tree()
-        root.node_type = NodeType.MARKDOWN
-        root.source = md_file
+        root = _make_index_tree(md_file)
         build(root, _site_config(), source, target)
 
         output = (target / "index.html").read_text()
@@ -200,9 +205,7 @@ class TestTargetSync:
         md_file = source / "index.md"
         md_file.write_text("Title: Home\n\nHello.")
 
-        root = _make_tree()
-        root.node_type = NodeType.MARKDOWN
-        root.source = md_file
+        root = _make_index_tree(md_file)
         build(root, _site_config(), source, target)
 
         assert not stale.exists()
@@ -222,9 +225,7 @@ class TestTargetSync:
         md_file = source / "index.md"
         md_file.write_text("Title: Home\n\nHello.")
 
-        root = _make_tree()
-        root.node_type = NodeType.MARKDOWN
-        root.source = md_file
+        root = _make_index_tree(md_file)
         build(root, _site_config(), source, target)
 
         assert not stale_dir.exists()
@@ -243,9 +244,7 @@ class TestTargetSync:
         md_file = source / "index.md"
         md_file.write_text("Title: Home\n\nHello.")
 
-        root = _make_tree()
-        root.node_type = NodeType.MARKDOWN
-        root.source = md_file
+        root = _make_index_tree(md_file)
         build(root, _site_config(), source, target)
 
         assert not (target / "old").exists()
@@ -313,9 +312,7 @@ class TestBuildErrors:
         md_file = source / "index.md"
         md_file.write_text("Title: Home\n\nHello.")
 
-        root = _make_tree()
-        root.node_type = NodeType.MARKDOWN
-        root.source = md_file
+        root = _make_index_tree(md_file)
         with pytest.raises(GalleryError):
             build(root, _site_config(), source, target)
 
@@ -331,9 +328,7 @@ class TestBuildErrors:
         md_file = source / "index.md"
         md_file.write_text("Title: Home\n\nHello.")
 
-        root = _make_tree()
-        root.node_type = NodeType.MARKDOWN
-        root.source = md_file
+        root = _make_index_tree(md_file)
         with pytest.raises(GalleryError):
             build(root, _site_config(), source, target)
 
@@ -389,9 +384,7 @@ class TestIncrementalBuild:
         _set_theme_mtime(source, PAST)
         _set_mtime(conf, PAST)
 
-        root = _make_tree()
-        root.node_type = NodeType.MARKDOWN
-        root.source = md
+        root = _make_index_tree(md)
 
         # First build
         build(root, _site_config(), source, target, config_path=conf)
@@ -412,9 +405,7 @@ class TestIncrementalBuild:
         _set_theme_mtime(source, PAST)
         _set_mtime(conf, PAST)
 
-        root = _make_tree()
-        root.node_type = NodeType.MARKDOWN
-        root.source = md
+        root = _make_index_tree(md)
 
         build(root, _site_config(), source, target, config_path=conf)
         html = target / "index.html"
@@ -455,9 +446,7 @@ class TestIncrementalBuild:
         _set_theme_mtime(source, PAST)
         _set_mtime(conf, PAST)
 
-        root = _make_tree()
-        root.node_type = NodeType.MARKDOWN
-        root.source = md
+        root = _make_index_tree(md)
 
         build(root, _site_config(), source, target, config_path=conf)
         html = target / "index.html"
@@ -493,9 +482,7 @@ class TestIncrementalBuild:
         _set_theme_mtime(source, PAST)
         _set_mtime(conf, PAST)
 
-        root = _make_tree()
-        root.node_type = NodeType.MARKDOWN
-        root.source = md
+        root = _make_index_tree(md)
 
         build(root, _site_config(), source, target, config_path=conf)
         html = target / "index.html"
@@ -554,9 +541,7 @@ class TestIncrementalBuild:
         _set_theme_mtime(source, PAST)
         _set_mtime(conf, PAST)
 
-        root = _make_tree()
-        root.node_type = NodeType.MARKDOWN
-        root.source = md
+        root = _make_index_tree(md)
 
         build(root, _site_config(), source, target, config_path=conf)
 
