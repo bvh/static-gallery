@@ -35,6 +35,12 @@ def main() -> None:
         help="config file path (default: site.conf in source root)",
     )
     parser.add_argument(
+        "--theme",
+        type=Path,
+        default=None,
+        help="theme directory (default: .theme inside source)",
+    )
+    parser.add_argument(
         "--force",
         action="store_true",
         default=False,
@@ -108,7 +114,9 @@ def _resolve_dirs(
         )
 
     # Step 5: Resolve theme
-    if "theme" in site_config:
+    if args.theme is not None:
+        theme_dir = args.theme.resolve()
+    elif "theme" in site_config:
         theme_dir = (conf_dir / site_config["theme"]).resolve()
     else:
         theme_dir = (source / ".theme").resolve()

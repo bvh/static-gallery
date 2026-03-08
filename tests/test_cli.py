@@ -227,7 +227,13 @@ class TestCLIIntegration:
 
 def _make_args(**kwargs):
     """Create an argparse.Namespace with default None values."""
-    defaults = {"source": None, "target": None, "config": None, "force": False}
+    defaults = {
+        "source": None,
+        "target": None,
+        "config": None,
+        "theme": None,
+        "force": False,
+    }
     defaults.update(kwargs)
     return argparse.Namespace(**defaults)
 
@@ -300,6 +306,19 @@ class TestResolveDirs:
         args = _make_args(source=source)
         src, tgt, theme, cfg, conf = _resolve_dirs(args)
         assert theme == my_theme.resolve()
+
+    def test_theme_from_cli_overrides_config(self, tmp_path):
+        source = tmp_path / "site"
+        source.mkdir()
+        cli_theme = tmp_path / "cli-theme"
+        cli_theme.mkdir()
+        (source / "site.conf").write_text(
+            "title: Test\nurl: https://example.com/\nlanguage: en-us\ntheme: ../config-theme\n"
+        )
+
+        args = _make_args(source=source, theme=cli_theme)
+        src, tgt, theme, cfg, conf = _resolve_dirs(args)
+        assert theme == cli_theme.resolve()
 
     def test_source_from_config(self, tmp_path):
         site_dir = tmp_path / "site"
