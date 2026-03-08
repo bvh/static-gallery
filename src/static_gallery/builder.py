@@ -302,12 +302,11 @@ def _build_markdown(
     html_content = mistletoe.markdown(body)
 
     template_type = metadata.get("type", "page")
-    if "type" in metadata:
-        del metadata["type"]
+    page_context = {k: v for k, v in metadata.items() if k != "type"}
     template = _load_template(env, template_type)
 
     output = template.render(
-        site=site_config, page=metadata, content=Markup(html_content)
+        site=site_config, page=page_context, content=Markup(html_content)
     )
 
     html_target.parent.mkdir(parents=True, exist_ok=True)

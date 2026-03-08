@@ -6,10 +6,6 @@
 
 ## Design
 
-### Front matter parsing is mutated in `builder.py`
-
-`del metadata["type"]` in `_build_markdown` is a side effect hidden in the build step. Extracting the template type should happen more explicitly, or `parse_front_matter` could return it separately.
-
 ### `parse_front_matter` unpacking is fragile
 
 Line 59 in `config.py` does `key, value = _parse_line(...)` without guarding against a `None` return. It works only because the blank-line check on line 56 fires first. If `_parse_line` ever gains another `None`-return path (or if the iteration order changes), this will raise `TypeError`. Safer to check explicitly.
