@@ -34,6 +34,17 @@ uv run gallery --help
 uv run gallery site/ public/
 ```
 
+## Development
+
+### Pre-Commit Hooks
+
+After cloning the reepository, install the pre-commit hooks:
+```
+uv run pre-commit install
+```
+This will enable automatic linting and formatting check on every commit
+via [Ruff](https://docs.astral.sh/ruff/).
+
 ## Reference
 
 - [CommonMark Spec](https://spec.commonmark.org/)
