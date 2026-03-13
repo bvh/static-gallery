@@ -1,2 +1,5 @@
-def main() -> None:
-    print("Hello from static-gallery!")
+import static_gallery.cli
+
+
+def main() -> int:
+    return static_gallery.cli.main()
