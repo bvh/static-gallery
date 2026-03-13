@@ -40,6 +40,14 @@ class StaticNode:
         self.images = []
         self.assets = []
 
+    def get_markdown_path(self):
+        path = None
+        if self.type == "MARKDOWN":
+            path = self.path
+        elif self.type in ["DIRECTORY", "GALLERY", "HOME"]:
+            path = self.text
+        return path
+
     def add_child(self, node):
         match node.type:
             case "MARKDOWN":
