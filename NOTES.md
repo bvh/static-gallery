@@ -41,3 +41,63 @@ Edit `pyproject.toml`:
 
 Edit `README.md`:
 - Add description, prerequisites, and basic installation and usage info.
+
+### Commit to LOCAL Repository
+
+```
+git status
+git add .
+git status
+git commit -m "initial commit"
+```
+
+### Set Origin and Push to GitHub
+
+```
+git remote add origin git@github.com:bvh/static-gallery.git
+git branch -M main
+git push -u origin main
+```
+
+### Install/Update Ruff
+
+```
+ruff version
+which ruff
+uv tool install ruff@latest
+ruff version
+which ruff
+ruff help
+ruff check .
+ruff format .
+```
+
+### Add Ruff Pre-Commit Hook
+
+#### Install Pre-Commit Package
+Install `pre-commit` as a development dependency:
+```
+uv add --dev pre-commit
+touch .pre-commit-config.yaml
+```
+
+#### Configure Pre-Commit Hooks
+Add the following to `.pre-commit-config.yaml`:
+```
+repos:
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # ruff version:
+  rev: v0.15.6
+  hooks:
+    - id: ruff-check
+    - id: ruff-format
+```
+Change the `rev: v0.15.6` line to match the current version of `ruff`
+(run `ruff version`).
+
+#### Install Hooks and Verify
+Install the pre-commit scripts into `.git/hooks` and verify:
+```
+uv run pre-commit install
+uv run pre-commit run --all-files
+```
