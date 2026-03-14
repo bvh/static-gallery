@@ -40,12 +40,18 @@ uv run gallery site/ --title "My Site" --language en-us --url https://example.co
 uv run gallery site/ --config path/to/site.conf --theme path/to/theme --public path/to/output
 ```
 
+Build and immediately preview with a local HTTP server:
+```
+uv run gallery site/ --serve
+uv run gallery site/ --serve --port 3000
+```
+
 ### Configuration
 
 Site configuration uses a layered system with the following precedence
 (highest to lowest):
 
-1. **CLI arguments** — `--title`, `--language`, `--url`, `--config`, `--theme`, `--public`
+1. **CLI arguments** — `--title`, `--language`, `--url`, `--config`, `--theme`, `--public`, `--serve`, `--port`
 2. **Environment variables** — `STATIC_GALLERY_SITE_TITLE`, `STATIC_GALLERY_SITE_LANGUAGE`, `STATIC_GALLERY_SITE_URL`, `STATIC_GALLERY_CONFIG`, `STATIC_GALLERY_THEME`, `STATIC_GALLERY_PUBLIC`
 3. **Config file** — a `site.conf` file in the source root directory, using `key: value` format
 4. **Defaults** — `site.language` defaults to `en-us`

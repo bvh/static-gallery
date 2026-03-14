@@ -23,7 +23,7 @@ class Builder:
             theme_path = os.path.abspath(theme_path)
             self._theme_path = theme_path
             loader = FileSystemLoader(theme_path)
-        public_path = config.public_path or os.path.join(os.getcwd(), "public")
+        public_path = config.public_path
         self._public_path = os.path.abspath(public_path)
         self.env = Environment(
             loader=loader,

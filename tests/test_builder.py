@@ -488,13 +488,12 @@ def test_render_public_defaults_to_public_dir(tmp_path):
     theme.mkdir()
     (theme / "default.html").write_text("ok")
 
-    config = Config(cli_args={"theme_path": str(theme)})
-
     from static_gallery.scanner import Scanner
 
     old_cwd = os.getcwd()
     os.chdir(tmp_path)
     try:
+        config = Config(cli_args={"theme_path": str(theme)})
         root = Scanner(config).scan(str(source))
         Builder(config).render(root, str(source))
         assert (tmp_path / "public" / "index.html").exists()

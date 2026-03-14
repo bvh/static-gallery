@@ -20,6 +20,7 @@ class Config:
     def __init__(self, cli_args=None):
         self._defaults = {
             "site.language": "en-us",
+            "public_path": os.path.join(os.getcwd(), "public"),
         }
         self._inferred = {}
         self._file = {}

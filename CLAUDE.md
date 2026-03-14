@@ -23,7 +23,7 @@ uv run pre-commit run --all-files  # Run ruff linting and formatting checks
 **Data flow:** CLI args → `Config` → `Scanner(config).scan(path)` builds a recursive `Node` tree → `Builder(config).render(root, path)` walks the tree, renders Jinja2 templates, writes HTML and copies assets to `public_path`.
 
 **Key modules:**
-- `cli.py` — argparse-based CLI with optional flags (`--title`, `--language`, `--url`, `--config`, `--theme`, `--public`). Builds a `Config`, scans source, and renders via `Builder`.
+- `cli.py` — argparse-based CLI with optional flags (`--title`, `--language`, `--url`, `--config`, `--theme`, `--public`, `--serve`, `--port`). Builds a `Config`, scans source, and renders via `Builder`. `--serve` starts a local HTTP server after build; `--port` sets the port (default 8000). These flags are CLI-only behavior, not site configuration.
 - `config.py` — `Config` class with layered precedence: CLI args > env vars > config file > inferred > defaults. Parses `site.conf` files (`key: value` format). Env vars prefixed `STATIC_GALLERY_*` are mapped to config keys.
 - `scanner.py` — `Scanner` class that recursively walks directories, classifies files by extension, creates node tree. `index.md` becomes parent container text (not a separate node). `site.conf` at the root is loaded into config (not a separate node). Directories with only images become GALLERY type; mixed content becomes DIRECTORY.
 - `nodes.py` — `Node` class with typed child collections (`pages`, `images`, `assets`, `dirs`). Node types: HOME, DIRECTORY, GALLERY, MARKDOWN, IMAGE, STATIC. IMAGE nodes have a lazy `metadata` property that reads EXIF/IPTC/XMP data on first access.

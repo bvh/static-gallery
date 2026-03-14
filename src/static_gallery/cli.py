@@ -1,6 +1,8 @@
 import argparse
+import functools
 import logging
 import os
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 from static_gallery.config import Config
 from static_gallery.builder import Builder
@@ -34,6 +36,15 @@ def main() -> int:
     parser.add_argument("--title", help="site title")
     parser.add_argument("--language", help="site language")
     parser.add_argument("--url", help="site URL")
+    parser.add_argument(
+        "--serve", action="store_true", help="start a local HTTP server after build"
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="port for the HTTP server (default: 8000)",
+    )
     args = parser.parse_args()
 
     cli_args = {}
@@ -54,5 +65,17 @@ def main() -> int:
     except Exception as e:
         logging.getLogger(__name__).error("%s", e)
         return 1
+
+    if args.serve:
+        public_path = os.path.abspath(config.public_path)
+        handler = functools.partial(SimpleHTTPRequestHandler, directory=public_path)
+        server = HTTPServer(("", args.port), handler)
+        print(f"Serving at http://localhost:{args.port} — press Ctrl+C to stop")
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            server.server_close()
 
     return 0
