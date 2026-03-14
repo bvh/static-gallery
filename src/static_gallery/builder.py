@@ -88,10 +88,10 @@ class Builder:
 
     def _get_template_name(self, node):
         if node.type == "GALLERY":
-            return "_gallery.html"
+            return "gallery.html"
         if node.type == "DIRECTORY" and not node.text:
-            return "_directory.html"
-        return "_default.html"
+            return "directory.html"
+        return "default.html"
 
     def _build_page_context(self, node):
         md_path = node.get_markdown_path()
@@ -137,15 +137,14 @@ class Builder:
             self._copy_custom_theme_assets()
 
     def _copy_bundled_theme_assets(self):
-        theme_root = importlib.resources.files("static_gallery").joinpath(
-            "themes/default"
+        static_dir = importlib.resources.files("static_gallery").joinpath(
+            "themes/default/static"
         )
-        self._copy_bundled_dir(theme_root, self._public_path)
+        if static_dir.is_dir():
+            self._copy_bundled_dir(static_dir, self._public_path)
 
     def _copy_bundled_dir(self, resource_dir, dest_dir):
         for item in resource_dir.iterdir():
-            if item.name.startswith("_"):
-                continue
             if item.is_file():
                 dest = os.path.join(dest_dir, item.name)
                 os.makedirs(os.path.dirname(dest), exist_ok=True)
@@ -155,14 +154,13 @@ class Builder:
                 self._copy_bundled_dir(item, os.path.join(dest_dir, item.name))
 
     def _copy_custom_theme_assets(self):
-        for dirpath, dirnames, filenames in os.walk(self._theme_path):
-            # Skip underscore-prefixed directories
-            dirnames[:] = [d for d in dirnames if not d.startswith("_")]
+        static_dir = os.path.join(self._theme_path, "static")
+        if not os.path.isdir(static_dir):
+            return
+        for dirpath, dirnames, filenames in os.walk(static_dir):
             for filename in filenames:
-                if filename.startswith("_"):
-                    continue
                 src = os.path.join(dirpath, filename)
-                rel = os.path.relpath(src, self._theme_path)
+                rel = os.path.relpath(src, static_dir)
                 dest = os.path.join(self._public_path, rel)
                 os.makedirs(os.path.dirname(dest), exist_ok=True)
                 shutil.copy2(src, dest)

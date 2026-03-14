@@ -22,18 +22,18 @@ def _make_home(tmp_path, index_text=None):
 def test_init_creates_jinja_env(tmp_path):
     theme = tmp_path / "theme"
     theme.mkdir()
-    (theme / "_default.html").write_text("{{ page.title }}")
+    (theme / "default.html").write_text("{{ page.title }}")
     config = Config(cli_args={"theme_path": str(theme)})
     r = Builder(config)
     assert r.env is not None
-    tmpl = r.env.get_template("_default.html")
+    tmpl = r.env.get_template("default.html")
     assert tmpl is not None
 
 
 def test_init_uses_bundled_theme_by_default():
     config = Config()
     r = Builder(config)
-    tmpl = r.env.get_template("_default.html")
+    tmpl = r.env.get_template("default.html")
     assert tmpl is not None
 
 
@@ -112,7 +112,7 @@ def test_template_name_home():
     node = Node.__new__(Node)
     node.type = "HOME"
     node.text = "/some/index.md"
-    assert r._get_template_name(node) == "_default.html"
+    assert r._get_template_name(node) == "default.html"
 
 
 def test_template_name_markdown():
@@ -120,7 +120,7 @@ def test_template_name_markdown():
     r = Builder(config)
     node = Node.__new__(Node)
     node.type = "MARKDOWN"
-    assert r._get_template_name(node) == "_default.html"
+    assert r._get_template_name(node) == "default.html"
 
 
 def test_template_name_directory_with_index():
@@ -129,7 +129,7 @@ def test_template_name_directory_with_index():
     node = Node.__new__(Node)
     node.type = "DIRECTORY"
     node.text = "/some/index.md"
-    assert r._get_template_name(node) == "_default.html"
+    assert r._get_template_name(node) == "default.html"
 
 
 def test_template_name_directory_without_index():
@@ -138,7 +138,7 @@ def test_template_name_directory_without_index():
     node = Node.__new__(Node)
     node.type = "DIRECTORY"
     node.text = None
-    assert r._get_template_name(node) == "_directory.html"
+    assert r._get_template_name(node) == "directory.html"
 
 
 def test_template_name_gallery():
@@ -146,7 +146,7 @@ def test_template_name_gallery():
     r = Builder(config)
     node = Node.__new__(Node)
     node.type = "GALLERY"
-    assert r._get_template_name(node) == "_gallery.html"
+    assert r._get_template_name(node) == "gallery.html"
 
 
 # --- _build_page_context ---
@@ -233,9 +233,11 @@ def test_page_context_directory_with_children(tmp_path):
 def test_copy_theme_assets(tmp_path):
     theme = tmp_path / "theme"
     theme.mkdir()
-    (theme / "_default.html").write_text("{{ page.title }}")
-    (theme / "styles.css").write_text("body {}")
-    (theme / "script.js").write_text("console.log()")
+    (theme / "default.html").write_text("{{ page.title }}")
+    static = theme / "static"
+    static.mkdir()
+    (static / "styles.css").write_text("body {}")
+    (static / "script.js").write_text("console.log()")
     public = tmp_path / "public"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
     r = Builder(config)
@@ -243,18 +245,20 @@ def test_copy_theme_assets(tmp_path):
     r._copy_theme_assets()
     assert (public / "styles.css").exists()
     assert (public / "script.js").exists()
-    # underscore-prefixed templates should NOT be copied
-    assert not (public / "_default.html").exists()
+    # templates should NOT be copied
+    assert not (public / "default.html").exists()
 
 
 def test_copy_theme_assets_recursive(tmp_path):
     theme = tmp_path / "theme"
     theme.mkdir()
-    (theme / "_default.html").write_text("{{ page.title }}")
-    css_dir = theme / "css"
+    (theme / "default.html").write_text("{{ page.title }}")
+    static = theme / "static"
+    static.mkdir()
+    css_dir = static / "css"
     css_dir.mkdir()
     (css_dir / "main.css").write_text("body {}")
-    js_dir = theme / "js"
+    js_dir = static / "js"
     js_dir.mkdir()
     (js_dir / "app.js").write_text("console.log()")
     public = tmp_path / "public"
@@ -264,6 +268,19 @@ def test_copy_theme_assets_recursive(tmp_path):
     r._copy_theme_assets()
     assert (public / "css" / "main.css").exists()
     assert (public / "js" / "app.js").exists()
+
+
+def test_copy_theme_assets_no_static_dir(tmp_path):
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "default.html").write_text("{{ page.title }}")
+    public = tmp_path / "public"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+    r = Builder(config)
+    public.mkdir()
+    r._copy_theme_assets()
+    # Only the public dir itself should exist, with no files copied
+    assert list(public.iterdir()) == []
 
 
 def test_copy_bundled_theme_assets(tmp_path):
@@ -278,8 +295,8 @@ def test_copy_bundled_theme_assets(tmp_path):
     Builder(config).render(root, str(source))
 
     assert (public / "styles.css").exists()
-    # underscore-prefixed templates should NOT be copied
-    assert not (public / "_default.html").exists()
+    # templates should NOT be copied
+    assert not (public / "default.html").exists()
 
 
 # --- render (integration) ---
@@ -294,10 +311,12 @@ def test_render_basic_site(tmp_path):
     # Set up theme
     theme = tmp_path / "theme"
     theme.mkdir()
-    (theme / "_default.html").write_text(
+    (theme / "default.html").write_text(
         "<title>{{ page.title }}</title><main>{{ page.content }}</main>"
     )
-    (theme / "styles.css").write_text("body {}")
+    static = theme / "static"
+    static.mkdir()
+    (static / "styles.css").write_text("body {}")
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
@@ -321,7 +340,7 @@ def test_render_markdown_page(tmp_path):
 
     theme = tmp_path / "theme"
     theme.mkdir()
-    (theme / "_default.html").write_text(
+    (theme / "default.html").write_text(
         "<title>{{ page.title }}</title>{{ page.content }}"
     )
 
@@ -347,10 +366,10 @@ def test_render_nested_markdown_page(tmp_path):
 
     theme = tmp_path / "theme"
     theme.mkdir()
-    (theme / "_default.html").write_text(
+    (theme / "default.html").write_text(
         "<title>{{ page.title }}</title>{{ page.content }}"
     )
-    (theme / "_directory.html").write_text("<h1>{{ page.title }}</h1>")
+    (theme / "directory.html").write_text("<h1>{{ page.title }}</h1>")
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
@@ -374,8 +393,8 @@ def test_render_copies_images(tmp_path):
 
     theme = tmp_path / "theme"
     theme.mkdir()
-    (theme / "_default.html").write_text("{{ page.title }}")
-    (theme / "_gallery.html").write_text(
+    (theme / "default.html").write_text("{{ page.title }}")
+    (theme / "gallery.html").write_text(
         "{% for img in page.images %}{{ img.url }}{% endfor %}"
     )
 
@@ -396,7 +415,7 @@ def test_render_copies_static_assets(tmp_path):
 
     theme = tmp_path / "theme"
     theme.mkdir()
-    (theme / "_default.html").write_text("{{ page.title }}")
+    (theme / "default.html").write_text("{{ page.title }}")
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
@@ -416,8 +435,8 @@ def test_render_directory_listing(tmp_path):
 
     theme = tmp_path / "theme"
     theme.mkdir()
-    (theme / "_default.html").write_text("{{ page.title }}")
-    (theme / "_directory.html").write_text(
+    (theme / "default.html").write_text("{{ page.title }}")
+    (theme / "directory.html").write_text(
         "<h1>{{ page.title }}</h1>"
         '{% for p in page.pages %}<a href="{{ p.url }}">{{ p.name }}</a>{% endfor %}'
     )
@@ -440,7 +459,7 @@ def test_render_site_context(tmp_path):
 
     theme = tmp_path / "theme"
     theme.mkdir()
-    (theme / "_default.html").write_text("{{ site.title }} - {{ site.language }}")
+    (theme / "default.html").write_text("{{ site.title }} - {{ site.language }}")
 
     public = tmp_path / "output"
     config = Config(
@@ -466,7 +485,7 @@ def test_render_public_defaults_to_public_dir(tmp_path):
 
     theme = tmp_path / "theme"
     theme.mkdir()
-    (theme / "_default.html").write_text("ok")
+    (theme / "default.html").write_text("ok")
 
     config = Config(cli_args={"theme_path": str(theme)})
 
