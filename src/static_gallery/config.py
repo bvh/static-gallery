@@ -16,7 +16,7 @@ ENV_MAP = {
 KEY_PATTERN = re.compile(r"^[a-zA-Z0-9_.\-]+$")
 
 
-class StaticGalleryConfig:
+class Config:
     def __init__(self, cli_args=None):
         self._defaults = {
             "site.language": "en-us",

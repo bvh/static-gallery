@@ -1,7 +1,7 @@
 import pytest
 
 from static_gallery import scanner
-from static_gallery.config import StaticGalleryConfig
+from static_gallery.config import Config
 from static_gallery.scanner import Scanner
 
 
@@ -17,7 +17,7 @@ def test_scan_with_config_loads_site_conf(tmp_path):
     index.write_text("# Hello")
     conf = tmp_path / "site.conf"
     conf.write_text("site.title: My Site\n")
-    config = StaticGalleryConfig()
+    config = Config()
     Scanner(config).scan(str(tmp_path))
     assert config.get("site.title") == "My Site"
 
@@ -171,7 +171,7 @@ def test_site_conf_not_loaded_in_subdirectory(tmp_path):
     sub.mkdir()
     (sub / "site.conf").write_text("site.title: Nested\n")
     (sub / "page.md").write_text("# Page")
-    config = StaticGalleryConfig()
+    config = Config()
     root = Scanner(config).scan(str(tmp_path))
     # site.conf in subdir should be treated as a static asset, not loaded
     assert config.get("site.title") is None
@@ -181,7 +181,7 @@ def test_site_conf_not_loaded_in_subdirectory(tmp_path):
 def test_site_conf_skipped_when_config_path_set(tmp_path):
     (tmp_path / "site.conf").write_text("site.title: From File\n")
     (tmp_path / "index.md").write_text("# Hi")
-    config = StaticGalleryConfig(cli_args={"config_path": "/some/other.conf"})
+    config = Config(cli_args={"config_path": "/some/other.conf"})
     Scanner(config).scan(str(tmp_path))
     # site.conf should not be loaded because config_path is already set
     assert config.get("site.title") is None

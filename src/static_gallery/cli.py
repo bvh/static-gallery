@@ -2,8 +2,8 @@ import argparse
 import logging
 import os
 
-from static_gallery.config import StaticGalleryConfig
-from static_gallery.builder import StaticGalleryBuilder
+from static_gallery.config import Config
+from static_gallery.builder import Builder
 from static_gallery.scanner import Scanner
 
 CLI_ARG_MAP = {
@@ -42,7 +42,7 @@ def main() -> int:
         if value is not None:
             cli_args[config_key] = value
 
-    config = StaticGalleryConfig(cli_args=cli_args)
+    config = Config(cli_args=cli_args)
 
     if config.config_path:
         config.load_file(config.config_path)
@@ -50,7 +50,7 @@ def main() -> int:
     try:
         source_path = os.path.abspath(args.source)
         source_root = Scanner(config).scan(source_path)
-        StaticGalleryBuilder(config).render(source_root, source_path)
+        Builder(config).render(source_root, source_path)
     except Exception as e:
         logging.getLogger(__name__).error("%s", e)
         return 1

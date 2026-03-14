@@ -10,7 +10,7 @@ from static_gallery.markdown import MarkdownRenderer
 logger = logging.getLogger(__name__)
 
 
-class StaticGalleryBuilder:
+class Builder:
     def __init__(self, config):
         self.config = config
         theme_path = config.theme_path

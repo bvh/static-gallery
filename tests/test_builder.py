@@ -1,13 +1,13 @@
 import os
 
-from static_gallery.config import StaticGalleryConfig
-from static_gallery.nodes import StaticGalleryNode
-from static_gallery.builder import StaticGalleryBuilder
+from static_gallery.config import Config
+from static_gallery.nodes import Node
+from static_gallery.builder import Builder
 
 
 def _make_home(tmp_path, index_text=None):
     """Create a HOME node rooted at tmp_path with optional index.md."""
-    root = StaticGalleryNode(str(tmp_path), type="HOME")
+    root = Node(str(tmp_path), type="HOME")
     if index_text is not None:
         index = tmp_path / "index.md"
         index.write_text(index_text)
@@ -22,16 +22,16 @@ def test_init_creates_jinja_env(tmp_path):
     theme = tmp_path / "theme"
     theme.mkdir()
     (theme / "_default.html").write_text("{{ page.title }}")
-    config = StaticGalleryConfig(cli_args={"theme_path": str(theme)})
-    r = StaticGalleryBuilder(config)
+    config = Config(cli_args={"theme_path": str(theme)})
+    r = Builder(config)
     assert r.env is not None
     tmpl = r.env.get_template("_default.html")
     assert tmpl is not None
 
 
 def test_init_uses_bundled_theme_by_default():
-    config = StaticGalleryConfig()
-    r = StaticGalleryBuilder(config)
+    config = Config()
+    r = Builder(config)
     tmpl = r.env.get_template("_default.html")
     assert tmpl is not None
 
@@ -40,65 +40,65 @@ def test_init_uses_bundled_theme_by_default():
 
 
 def test_output_path_home(tmp_path):
-    config = StaticGalleryConfig()
-    r = StaticGalleryBuilder(config)
+    config = Config()
+    r = Builder(config)
     root = _make_home(tmp_path)
     assert r._get_output_path(root, tmp_path) == "index.html"
 
 
 def test_output_path_markdown(tmp_path):
-    config = StaticGalleryConfig()
-    r = StaticGalleryBuilder(config)
+    config = Config()
+    r = Builder(config)
     root = _make_home(tmp_path)
     page_file = tmp_path / "about.md"
     page_file.write_text("# About")
-    page = StaticGalleryNode(str(page_file), parent=root, type="MARKDOWN")
+    page = Node(str(page_file), parent=root, type="MARKDOWN")
     assert r._get_output_path(page, tmp_path) == "about/index.html"
 
 
 def test_output_path_directory(tmp_path):
-    config = StaticGalleryConfig()
-    r = StaticGalleryBuilder(config)
+    config = Config()
+    r = Builder(config)
     root = _make_home(tmp_path)
     sub = tmp_path / "blog"
     sub.mkdir()
-    dir_node = StaticGalleryNode(str(sub), parent=root, type="DIRECTORY")
+    dir_node = Node(str(sub), parent=root, type="DIRECTORY")
     assert r._get_output_path(dir_node, tmp_path) == "blog/index.html"
 
 
 def test_output_path_gallery(tmp_path):
-    config = StaticGalleryConfig()
-    r = StaticGalleryBuilder(config)
+    config = Config()
+    r = Builder(config)
     root = _make_home(tmp_path)
     sub = tmp_path / "photos"
     sub.mkdir()
-    gal_node = StaticGalleryNode(str(sub), parent=root, type="GALLERY")
+    gal_node = Node(str(sub), parent=root, type="GALLERY")
     assert r._get_output_path(gal_node, tmp_path) == "photos/index.html"
 
 
 def test_output_path_nested_directory(tmp_path):
-    config = StaticGalleryConfig()
-    r = StaticGalleryBuilder(config)
+    config = Config()
+    r = Builder(config)
     root = _make_home(tmp_path)
     sub = tmp_path / "blog"
     sub.mkdir()
     deep = sub / "2024"
     deep.mkdir()
-    dir_node = StaticGalleryNode(str(sub), parent=root, type="DIRECTORY")
-    deep_node = StaticGalleryNode(str(deep), parent=dir_node, type="DIRECTORY")
+    dir_node = Node(str(sub), parent=root, type="DIRECTORY")
+    deep_node = Node(str(deep), parent=dir_node, type="DIRECTORY")
     assert r._get_output_path(deep_node, tmp_path) == "blog/2024/index.html"
 
 
 def test_output_path_nested_markdown(tmp_path):
-    config = StaticGalleryConfig()
-    r = StaticGalleryBuilder(config)
+    config = Config()
+    r = Builder(config)
     root = _make_home(tmp_path)
     sub = tmp_path / "blog"
     sub.mkdir()
     page_file = sub / "post.md"
     page_file.write_text("# Post")
-    dir_node = StaticGalleryNode(str(sub), parent=root, type="DIRECTORY")
-    page = StaticGalleryNode(str(page_file), parent=dir_node, type="MARKDOWN")
+    dir_node = Node(str(sub), parent=root, type="DIRECTORY")
+    page = Node(str(page_file), parent=dir_node, type="MARKDOWN")
     assert r._get_output_path(page, tmp_path) == "blog/post/index.html"
 
 
@@ -106,44 +106,44 @@ def test_output_path_nested_markdown(tmp_path):
 
 
 def test_template_name_home():
-    config = StaticGalleryConfig()
-    r = StaticGalleryBuilder(config)
-    node = StaticGalleryNode.__new__(StaticGalleryNode)
+    config = Config()
+    r = Builder(config)
+    node = Node.__new__(Node)
     node.type = "HOME"
     node.text = "/some/index.md"
     assert r._get_template_name(node) == "_default.html"
 
 
 def test_template_name_markdown():
-    config = StaticGalleryConfig()
-    r = StaticGalleryBuilder(config)
-    node = StaticGalleryNode.__new__(StaticGalleryNode)
+    config = Config()
+    r = Builder(config)
+    node = Node.__new__(Node)
     node.type = "MARKDOWN"
     assert r._get_template_name(node) == "_default.html"
 
 
 def test_template_name_directory_with_index():
-    config = StaticGalleryConfig()
-    r = StaticGalleryBuilder(config)
-    node = StaticGalleryNode.__new__(StaticGalleryNode)
+    config = Config()
+    r = Builder(config)
+    node = Node.__new__(Node)
     node.type = "DIRECTORY"
     node.text = "/some/index.md"
     assert r._get_template_name(node) == "_default.html"
 
 
 def test_template_name_directory_without_index():
-    config = StaticGalleryConfig()
-    r = StaticGalleryBuilder(config)
-    node = StaticGalleryNode.__new__(StaticGalleryNode)
+    config = Config()
+    r = Builder(config)
+    node = Node.__new__(Node)
     node.type = "DIRECTORY"
     node.text = None
     assert r._get_template_name(node) == "_directory.html"
 
 
 def test_template_name_gallery():
-    config = StaticGalleryConfig()
-    r = StaticGalleryBuilder(config)
-    node = StaticGalleryNode.__new__(StaticGalleryNode)
+    config = Config()
+    r = Builder(config)
+    node = Node.__new__(Node)
     node.type = "GALLERY"
     assert r._get_template_name(node) == "_gallery.html"
 
@@ -152,11 +152,11 @@ def test_template_name_gallery():
 
 
 def test_page_context_from_markdown(tmp_path):
-    config = StaticGalleryConfig()
-    r = StaticGalleryBuilder(config)
+    config = Config()
+    r = Builder(config)
     md_file = tmp_path / "page.md"
     md_file.write_text("# My Title\n\nSome content.")
-    node = StaticGalleryNode(str(md_file), type="MARKDOWN")
+    node = Node(str(md_file), type="MARKDOWN")
     ctx = r._build_page_context(node)
     assert ctx["title"] == "My Title"
     assert "Some content." in ctx["content"]
@@ -164,23 +164,23 @@ def test_page_context_from_markdown(tmp_path):
 
 
 def test_page_context_title_fallback(tmp_path):
-    config = StaticGalleryConfig()
-    r = StaticGalleryBuilder(config)
+    config = Config()
+    r = Builder(config)
     md_file = tmp_path / "page.md"
     md_file.write_text("No heading here, just text.")
-    node = StaticGalleryNode(str(md_file), type="MARKDOWN")
+    node = Node(str(md_file), type="MARKDOWN")
     ctx = r._build_page_context(node)
     assert ctx["title"] == "page"
 
 
 def test_page_context_directory_no_markdown(tmp_path):
-    config = StaticGalleryConfig()
-    r = StaticGalleryBuilder(config)
+    config = Config()
+    r = Builder(config)
     sub = tmp_path / "photos"
     sub.mkdir()
-    node = StaticGalleryNode(str(sub), type="GALLERY")
+    node = Node(str(sub), type="GALLERY")
     node.text = None
-    img = StaticGalleryNode.__new__(StaticGalleryNode)
+    img = Node.__new__(Node)
     img.type = "IMAGE"
     img.name = "a.jpg"
     img.path = str(sub / "a.jpg")
@@ -196,21 +196,21 @@ def test_page_context_directory_no_markdown(tmp_path):
 
 
 def test_page_context_directory_with_children(tmp_path):
-    config = StaticGalleryConfig()
-    r = StaticGalleryBuilder(config)
+    config = Config()
+    r = Builder(config)
     sub = tmp_path / "blog"
     sub.mkdir()
-    node = StaticGalleryNode(str(sub), type="DIRECTORY")
+    node = Node(str(sub), type="DIRECTORY")
     node.text = None
 
-    page = StaticGalleryNode.__new__(StaticGalleryNode)
+    page = Node.__new__(Node)
     page.type = "MARKDOWN"
     page.name = "post.md"
     page.stem = "post"
     page.path = str(sub / "post.md")
     node.pages = [page]
 
-    child_dir = StaticGalleryNode.__new__(StaticGalleryNode)
+    child_dir = Node.__new__(Node)
     child_dir.type = "DIRECTORY"
     child_dir.name = "archive"
     child_dir.path = str(sub / "archive")
@@ -236,10 +236,8 @@ def test_copy_theme_assets(tmp_path):
     (theme / "styles.css").write_text("body {}")
     (theme / "script.js").write_text("console.log()")
     public = tmp_path / "public"
-    config = StaticGalleryConfig(
-        cli_args={"theme_path": str(theme), "public_path": str(public)}
-    )
-    r = StaticGalleryBuilder(config)
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+    r = Builder(config)
     public.mkdir()
     r._copy_theme_assets()
     assert (public / "styles.css").exists()
@@ -259,10 +257,8 @@ def test_copy_theme_assets_recursive(tmp_path):
     js_dir.mkdir()
     (js_dir / "app.js").write_text("console.log()")
     public = tmp_path / "public"
-    config = StaticGalleryConfig(
-        cli_args={"theme_path": str(theme), "public_path": str(public)}
-    )
-    r = StaticGalleryBuilder(config)
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+    r = Builder(config)
     public.mkdir()
     r._copy_theme_assets()
     assert (public / "css" / "main.css").exists()
@@ -287,14 +283,12 @@ def test_render_basic_site(tmp_path):
     (theme / "styles.css").write_text("body {}")
 
     public = tmp_path / "output"
-    config = StaticGalleryConfig(
-        cli_args={"theme_path": str(theme), "public_path": str(public)}
-    )
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
     from static_gallery.scanner import Scanner
 
     root = Scanner(config).scan(str(source))
-    StaticGalleryBuilder(config).render(root, str(source))
+    Builder(config).render(root, str(source))
 
     index = public / "index.html"
     assert index.exists()
@@ -317,14 +311,12 @@ def test_render_markdown_page(tmp_path):
     )
 
     public = tmp_path / "output"
-    config = StaticGalleryConfig(
-        cli_args={"theme_path": str(theme), "public_path": str(public)}
-    )
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
     from static_gallery.scanner import Scanner
 
     root = Scanner(config).scan(str(source))
-    StaticGalleryBuilder(config).render(root, str(source))
+    Builder(config).render(root, str(source))
 
     out = public / "about" / "index.html"
     assert out.exists()
@@ -348,14 +340,12 @@ def test_render_nested_markdown_page(tmp_path):
     (theme / "_directory.html").write_text("<h1>{{ page.title }}</h1>")
 
     public = tmp_path / "output"
-    config = StaticGalleryConfig(
-        cli_args={"theme_path": str(theme), "public_path": str(public)}
-    )
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
     from static_gallery.scanner import Scanner
 
     root = Scanner(config).scan(str(source))
-    StaticGalleryBuilder(config).render(root, str(source))
+    Builder(config).render(root, str(source))
 
     out = public / "blog" / "post" / "index.html"
     assert out.exists()
@@ -379,14 +369,12 @@ def test_render_copies_images(tmp_path):
     )
 
     public = tmp_path / "output"
-    config = StaticGalleryConfig(
-        cli_args={"theme_path": str(theme), "public_path": str(public)}
-    )
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
     from static_gallery.scanner import Scanner
 
     root = Scanner(config).scan(str(source))
-    StaticGalleryBuilder(config).render(root, str(source))
+    Builder(config).render(root, str(source))
 
     assert (public / "photos" / "a.jpg").exists()
     assert (public / "photos" / "index.html").exists()
@@ -402,14 +390,12 @@ def test_render_copies_static_assets(tmp_path):
     (theme / "_default.html").write_text("{{ page.title }}")
 
     public = tmp_path / "output"
-    config = StaticGalleryConfig(
-        cli_args={"theme_path": str(theme), "public_path": str(public)}
-    )
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
     from static_gallery.scanner import Scanner
 
     root = Scanner(config).scan(str(source))
-    StaticGalleryBuilder(config).render(root, str(source))
+    Builder(config).render(root, str(source))
 
     assert (public / "data.json").exists()
 
@@ -430,14 +416,12 @@ def test_render_directory_listing(tmp_path):
     )
 
     public = tmp_path / "output"
-    config = StaticGalleryConfig(
-        cli_args={"theme_path": str(theme), "public_path": str(public)}
-    )
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
     from static_gallery.scanner import Scanner
 
     root = Scanner(config).scan(str(source))
-    StaticGalleryBuilder(config).render(root, str(source))
+    Builder(config).render(root, str(source))
 
     dir_html = (public / "docs" / "index.html").read_text()
     assert "<h1>docs</h1>" in dir_html
@@ -454,7 +438,7 @@ def test_render_site_context(tmp_path):
     (theme / "_default.html").write_text("{{ site.title }} - {{ site.language }}")
 
     public = tmp_path / "output"
-    config = StaticGalleryConfig(
+    config = Config(
         cli_args={
             "theme_path": str(theme),
             "public_path": str(public),
@@ -465,7 +449,7 @@ def test_render_site_context(tmp_path):
     from static_gallery.scanner import Scanner
 
     root = Scanner(config).scan(str(source))
-    StaticGalleryBuilder(config).render(root, str(source))
+    Builder(config).render(root, str(source))
 
     html = (public / "index.html").read_text()
     assert "Test Site" in html
@@ -481,7 +465,7 @@ def test_render_public_defaults_to_public_dir(tmp_path):
     theme.mkdir()
     (theme / "_default.html").write_text("ok")
 
-    config = StaticGalleryConfig(cli_args={"theme_path": str(theme)})
+    config = Config(cli_args={"theme_path": str(theme)})
 
     from static_gallery.scanner import Scanner
 
@@ -489,7 +473,7 @@ def test_render_public_defaults_to_public_dir(tmp_path):
     os.chdir(tmp_path)
     try:
         root = Scanner(config).scan(str(source))
-        StaticGalleryBuilder(config).render(root, str(source))
+        Builder(config).render(root, str(source))
         assert (tmp_path / "public" / "index.html").exists()
     finally:
         os.chdir(old_cwd)
