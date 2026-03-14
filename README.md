@@ -1,7 +1,7 @@
 # Static Gallery
 
 Static Gallery is a simple static site and image gallery generator written
-in Python. Modern, well-structures HTML/CSS is encourages and JavaScript is
+in Python. Modern, well-structured HTML/CSS is encouraged and JavaScript is
 100% optional.
 
 ## Getting Started
@@ -68,7 +68,7 @@ uv run pytest
 
 ### Pre-Commit Hooks
 
-After cloning the reepository, install the pre-commit hooks:
+After cloning the repository, install the pre-commit hooks:
 ```
 uv run pre-commit install
 ```
