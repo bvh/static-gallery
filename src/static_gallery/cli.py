@@ -3,7 +3,7 @@ import logging
 import os
 
 from static_gallery.config import StaticGalleryConfig
-from static_gallery.markdown import MarkdownRenderer
+from static_gallery.renderer import Renderer
 from static_gallery.scanner import Scanner
 
 CLI_ARG_MAP = {
@@ -17,8 +17,7 @@ CLI_ARG_MAP = {
 
 
 def main() -> int:
-    logging.basicConfig(level=logging.WARNING)
-    rv = 0
+    logging.basicConfig(level=logging.INFO)
 
     parser = argparse.ArgumentParser(
         description="static site and image gallery generator"
@@ -48,16 +47,12 @@ def main() -> int:
     if config.config_path:
         config.load_file(config.config_path)
 
-    source_path = os.path.abspath(args.source)
-    print(f"scanning {source_path}")
-    source_root = Scanner(config).scan(source_path)
-    print(source_root)
+    try:
+        source_path = os.path.abspath(args.source)
+        source_root = Scanner(config).scan(source_path)
+        Renderer(config).render(source_root, source_path)
+    except Exception as e:
+        logging.getLogger(__name__).error("%s", e)
+        return 1
 
-    print()
-
-    mdr = MarkdownRenderer()
-
-    result = mdr.render_file(source_root.get_markdown_path(), remove_title=True)
-    print(result)
-
-    return rv
+    return 0
