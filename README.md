@@ -27,14 +27,44 @@ uv run gallery --help
 
 ### Usage
 
-Run the `gallery` command, supplying both a source directory and a target
-directory. Use the `--help` command argument for more details.
+Run the `gallery` command, supplying a source directory. Use the `--help`
+command argument for more details.
 ```
 uv run gallery --help
-uv run gallery site/ public/
+uv run gallery site/
+```
+
+Optional flags allow overriding configuration:
+```
+uv run gallery site/ --title "My Site" --language en-us --url https://example.com
+uv run gallery site/ --config path/to/site.conf --theme path/to/theme --public path/to/output
+```
+
+### Configuration
+
+Site configuration uses a layered system with the following precedence
+(highest to lowest):
+
+1. **CLI arguments** — `--title`, `--language`, `--url`, `--config`, `--theme`, `--public`
+2. **Environment variables** — `STATIC_GALLERY_SITE_TITLE`, `STATIC_GALLERY_SITE_LANGUAGE`, `STATIC_GALLERY_SITE_URL`, `STATIC_GALLERY_CONFIG`, `STATIC_GALLERY_THEME`, `STATIC_GALLERY_PUBLIC`
+3. **Config file** — a `site.conf` file in the source root directory, using `key: value` format
+4. **Defaults** — `site.language` defaults to `en-us`
+
+Example `site.conf`:
+```
+site.title: My Gallery
+site.language: en-us
+site.url: https://example.com
 ```
 
 ## Development
+
+### Tests
+
+Run the test suite with:
+```
+uv run pytest
+```
 
 ### Pre-Commit Hooks
 
