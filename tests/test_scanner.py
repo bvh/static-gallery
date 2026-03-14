@@ -2,13 +2,13 @@ import pytest
 
 from static_gallery import scanner
 from static_gallery.config import StaticGalleryConfig
-from static_gallery.scanner import scan
+from static_gallery.scanner import Scanner
 
 
 def test_scan_works_without_config(tmp_path):
     index = tmp_path / "index.md"
     index.write_text("# Hello")
-    root = scan(str(tmp_path))
+    root = Scanner().scan(str(tmp_path))
     assert root.type == "HOME"
 
 
@@ -18,25 +18,27 @@ def test_scan_with_config_loads_site_conf(tmp_path):
     conf = tmp_path / "site.conf"
     conf.write_text("site.title: My Site\n")
     config = StaticGalleryConfig()
-    scan(str(tmp_path), config=config)
+    Scanner(config).scan(str(tmp_path))
     assert config.get("site.title") == "My Site"
 
 
 def test_process_config_removed():
     assert not hasattr(scanner, "process_config")
+    assert hasattr(scanner, "Scanner")
+    assert not hasattr(scanner, "scan")
 
 
 def test_scan_non_directory_raises(tmp_path):
     f = tmp_path / "file.txt"
     f.write_text("hello")
     with pytest.raises(ValueError, match="not a directory"):
-        scan(str(f))
+        Scanner().scan(str(f))
 
 
 def test_index_md_sets_parent_text(tmp_path):
     index = tmp_path / "index.md"
     index.write_text("# Home")
-    root = scan(str(tmp_path))
+    root = Scanner().scan(str(tmp_path))
     assert root.text == str(index)
     # index.md should not appear as a separate page node
     assert len(root.pages) == 0
@@ -47,7 +49,7 @@ def test_dotfiles_are_skipped(tmp_path):
     (tmp_path / ".hidden").write_text("secret")
     (tmp_path / ".hiddendir").mkdir()
     (tmp_path / ".hiddendir" / "file.txt").write_text("stuff")
-    root = scan(str(tmp_path))
+    root = Scanner().scan(str(tmp_path))
     assert len(root.pages) == 0
     assert len(root.assets) == 0
     assert len(root.dirs) == 0
@@ -59,7 +61,7 @@ def test_symlinks_are_skipped(tmp_path):
     real.write_text("# Real")
     link = tmp_path / "link.md"
     link.symlink_to(real)
-    root = scan(str(tmp_path))
+    root = Scanner().scan(str(tmp_path))
     # real.md is counted, link.md is not
     assert len(root.pages) == 1
     assert root.pages[0].name == "real.md"
@@ -68,7 +70,7 @@ def test_symlinks_are_skipped(tmp_path):
 def test_markdown_files_classified(tmp_path):
     (tmp_path / "page.md").write_text("# Page")
     (tmp_path / "doc.markdown").write_text("# Doc")
-    root = scan(str(tmp_path))
+    root = Scanner().scan(str(tmp_path))
     assert len(root.pages) == 2
     types = {p.type for p in root.pages}
     assert types == {"MARKDOWN"}
@@ -77,7 +79,7 @@ def test_markdown_files_classified(tmp_path):
 def test_image_files_classified(tmp_path):
     for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp"]:
         (tmp_path / f"img{ext}").write_bytes(b"\x00")
-    root = scan(str(tmp_path))
+    root = Scanner().scan(str(tmp_path))
     assert len(root.images) == 5
     assert all(i.type == "IMAGE" for i in root.images)
 
@@ -86,7 +88,7 @@ def test_static_files_classified(tmp_path):
     (tmp_path / "style.css").write_text("body {}")
     (tmp_path / "script.js").write_text("console.log()")
     (tmp_path / "data.json").write_text("{}")
-    root = scan(str(tmp_path))
+    root = Scanner().scan(str(tmp_path))
     assert len(root.assets) == 3
     assert all(a.type == "STATIC" for a in root.assets)
 
@@ -95,7 +97,7 @@ def test_subdirectory_classified_as_directory(tmp_path):
     sub = tmp_path / "subdir"
     sub.mkdir()
     (sub / "page.md").write_text("# Sub page")
-    root = scan(str(tmp_path))
+    root = Scanner().scan(str(tmp_path))
     assert len(root.dirs) == 1
     assert root.dirs[0].type == "DIRECTORY"
     assert root.dirs[0].name == "subdir"
@@ -106,7 +108,7 @@ def test_gallery_directory(tmp_path):
     gallery.mkdir()
     (gallery / "a.jpg").write_bytes(b"\x00")
     (gallery / "b.png").write_bytes(b"\x00")
-    root = scan(str(tmp_path))
+    root = Scanner().scan(str(tmp_path))
     assert len(root.dirs) == 1
     assert root.dirs[0].type == "GALLERY"
 
@@ -116,13 +118,13 @@ def test_mixed_directory_not_gallery(tmp_path):
     sub.mkdir()
     (sub / "photo.jpg").write_bytes(b"\x00")
     (sub / "readme.md").write_text("# Hi")
-    root = scan(str(tmp_path))
+    root = Scanner().scan(str(tmp_path))
     assert root.dirs[0].type == "DIRECTORY"
 
 
 def test_empty_directory_skipped(tmp_path):
     (tmp_path / "empty").mkdir()
-    root = scan(str(tmp_path))
+    root = Scanner().scan(str(tmp_path))
     assert len(root.dirs) == 0
 
 
@@ -130,7 +132,7 @@ def test_empty_directory_with_only_dotfiles_skipped(tmp_path):
     sub = tmp_path / "seemsempty"
     sub.mkdir()
     (sub / ".gitkeep").write_text("")
-    root = scan(str(tmp_path))
+    root = Scanner().scan(str(tmp_path))
     assert len(root.dirs) == 0
 
 
@@ -149,7 +151,7 @@ def test_recursive_scanning(tmp_path):
     deep.mkdir()
     (deep / "photo.jpg").write_bytes(b"\x00")
 
-    root = scan(str(tmp_path))
+    root = Scanner().scan(str(tmp_path))
     assert root.type == "HOME"
     assert root.text is not None
     assert len(root.dirs) == 1
@@ -170,7 +172,7 @@ def test_site_conf_not_loaded_in_subdirectory(tmp_path):
     (sub / "site.conf").write_text("site.title: Nested\n")
     (sub / "page.md").write_text("# Page")
     config = StaticGalleryConfig()
-    root = scan(str(tmp_path), config=config)
+    root = Scanner(config).scan(str(tmp_path))
     # site.conf in subdir should be treated as a static asset, not loaded
     assert config.get("site.title") is None
     assert len(root.dirs[0].assets) == 1
@@ -180,7 +182,7 @@ def test_site_conf_skipped_when_config_path_set(tmp_path):
     (tmp_path / "site.conf").write_text("site.title: From File\n")
     (tmp_path / "index.md").write_text("# Hi")
     config = StaticGalleryConfig(cli_args={"config_path": "/some/other.conf"})
-    scan(str(tmp_path), config=config)
+    Scanner(config).scan(str(tmp_path))
     # site.conf should not be loaded because config_path is already set
     assert config.get("site.title") is None
 
@@ -188,12 +190,12 @@ def test_site_conf_skipped_when_config_path_set(tmp_path):
 def test_index_md_case_insensitive(tmp_path):
     index = tmp_path / "INDEX.MD"
     index.write_text("# Upper")
-    root = scan(str(tmp_path))
+    root = Scanner().scan(str(tmp_path))
     assert root.text == str(index)
     assert len(root.pages) == 0
 
 
 def test_child_nodes_have_parent_set(tmp_path):
     (tmp_path / "page.md").write_text("# Page")
-    root = scan(str(tmp_path))
+    root = Scanner().scan(str(tmp_path))
     assert root.pages[0].parent is root

@@ -3,7 +3,7 @@ import logging
 import os
 
 from static_gallery.config import StaticGalleryConfig
-from static_gallery.scanner import scan
+from static_gallery.scanner import Scanner
 
 CLI_ARG_MAP = {
     "title": "site.title",
@@ -49,7 +49,7 @@ def main() -> int:
 
     source_path = os.path.abspath(args.source)
     print(f"scanning {source_path}")
-    source_root = scan(source_path, config=config)
+    source_root = Scanner(config).scan(source_path)
     print(source_root)
 
     return rv
