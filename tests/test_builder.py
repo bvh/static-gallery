@@ -3,6 +3,7 @@ import os
 from static_gallery.config import Config
 from static_gallery.nodes import Node
 from static_gallery.builder import Builder
+from static_gallery.scanner import Scanner
 
 
 def _make_home(tmp_path, index_text=None):
@@ -265,6 +266,22 @@ def test_copy_theme_assets_recursive(tmp_path):
     assert (public / "js" / "app.js").exists()
 
 
+def test_copy_bundled_theme_assets(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "index.md").write_text("# Hi")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    Builder(config).render(root, str(source))
+
+    assert (public / "styles.css").exists()
+    # underscore-prefixed templates should NOT be copied
+    assert not (public / "_default.html").exists()
+
+
 # --- render (integration) ---
 
 
@@ -284,8 +301,6 @@ def test_render_basic_site(tmp_path):
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
-
-    from static_gallery.scanner import Scanner
 
     root = Scanner(config).scan(str(source))
     Builder(config).render(root, str(source))
@@ -312,8 +327,6 @@ def test_render_markdown_page(tmp_path):
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
-
-    from static_gallery.scanner import Scanner
 
     root = Scanner(config).scan(str(source))
     Builder(config).render(root, str(source))
@@ -342,8 +355,6 @@ def test_render_nested_markdown_page(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    from static_gallery.scanner import Scanner
-
     root = Scanner(config).scan(str(source))
     Builder(config).render(root, str(source))
 
@@ -371,8 +382,6 @@ def test_render_copies_images(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    from static_gallery.scanner import Scanner
-
     root = Scanner(config).scan(str(source))
     Builder(config).render(root, str(source))
 
@@ -391,8 +400,6 @@ def test_render_copies_static_assets(tmp_path):
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
-
-    from static_gallery.scanner import Scanner
 
     root = Scanner(config).scan(str(source))
     Builder(config).render(root, str(source))
@@ -417,8 +424,6 @@ def test_render_directory_listing(tmp_path):
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
-
-    from static_gallery.scanner import Scanner
 
     root = Scanner(config).scan(str(source))
     Builder(config).render(root, str(source))
@@ -445,8 +450,6 @@ def test_render_site_context(tmp_path):
             "site.title": "Test Site",
         }
     )
-
-    from static_gallery.scanner import Scanner
 
     root = Scanner(config).scan(str(source))
     Builder(config).render(root, str(source))

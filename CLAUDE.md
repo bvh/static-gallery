@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Static Gallery is a Python CLI tool that generates static sites and image galleries from directory structures. It recursively scans a source directory, classifies files (markdown, images, static assets), and builds a node tree for site generation. Jinja2 templates in `theme/` render the output.
+Static Gallery is a Python CLI tool that generates static sites and image galleries from directory structures. It recursively scans a source directory, classifies files (markdown, images, static assets), and builds a node tree for site generation. Jinja2 templates bundled with the package render the output.
 
 ## Commands
 
 ```bash
 uv run gallery --help              # CLI help
-uv run gallery site/               # Generate site from source directory
+uv run gallery example/            # Generate site from source directory
 uv run pytest                      # Run test suite
 uv run pytest tests/test_scanner.py::test_name  # Run a single test
 uv run pre-commit run --all-files  # Run ruff linting and formatting checks
@@ -30,7 +30,7 @@ uv run pre-commit run --all-files  # Run ruff linting and formatting checks
 - `markdown.py` — `MarkdownRenderer` class wrapping `markdown-it-py`. Single `MarkdownIt` instance reused across calls. `render()` supports `extract_title` (pull first H1 as title) and `remove_title` (strip first H1 from output). `render_file()` is the file-based convenience wrapper. Returns `MarkdownResult(html, title)`.
 - `builder.py` — `Builder` class that walks the node tree, renders each node through Jinja2 templates, writes HTML to `public_path`, and copies images/assets. Template selection: `_default.html` for MARKDOWN/HOME/DIRECTORY-with-index, `_directory.html` for DIRECTORY-without-index, `_gallery.html` for GALLERY. Theme assets (non-underscore-prefixed files) are copied to public root.
 
-**Themes:** `theme/default/` contains Jinja2 templates (`_default.html`, `_directory.html`, `_gallery.html`). Templates receive `site` (dict from config) and `page` (title, content, images, pages, dirs) variables. Content is marked as `Markup` for autoescape. Non-template files (no `_` prefix) are copied as static assets.
+**Themes:** `src/static_gallery/themes/default/` contains the bundled default Jinja2 templates (`_default.html`, `_directory.html`, `_gallery.html`), loaded via `PackageLoader`. Templates receive `site` (dict from config) and `page` (title, content, images, pages, dirs) variables. Content is marked as `Markup` for autoescape. Non-template files (no `_` prefix) are copied as static assets. Custom themes use `FileSystemLoader` via `--theme`.
 
 ## Build & Environment
 

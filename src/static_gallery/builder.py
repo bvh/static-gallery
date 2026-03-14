@@ -1,8 +1,9 @@
+import importlib.resources
 import logging
 import os
 import shutil
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, PackageLoader
 from markupsafe import Markup
 
 from static_gallery.markdown import MarkdownRenderer
@@ -15,15 +16,17 @@ class Builder:
         self.config = config
         theme_path = config.theme_path
         if theme_path is None:
-            theme_path = os.path.join(
-                os.path.dirname(__file__), "..", "..", "theme", "default"
-            )
-        theme_path = os.path.abspath(theme_path)
-        self._theme_path = theme_path
+            self._bundled_theme = True
+            loader = PackageLoader("static_gallery", "themes/default")
+        else:
+            self._bundled_theme = False
+            theme_path = os.path.abspath(theme_path)
+            self._theme_path = theme_path
+            loader = FileSystemLoader(theme_path)
         public_path = config.public_path or os.path.join(os.getcwd(), "public")
         self._public_path = os.path.abspath(public_path)
         self.env = Environment(
-            loader=FileSystemLoader(theme_path),
+            loader=loader,
             autoescape=True,
         )
         self._md = MarkdownRenderer()
@@ -128,6 +131,30 @@ class Builder:
         }
 
     def _copy_theme_assets(self):
+        if self._bundled_theme:
+            self._copy_bundled_theme_assets()
+        else:
+            self._copy_custom_theme_assets()
+
+    def _copy_bundled_theme_assets(self):
+        theme_root = importlib.resources.files("static_gallery").joinpath(
+            "themes/default"
+        )
+        self._copy_bundled_dir(theme_root, self._public_path)
+
+    def _copy_bundled_dir(self, resource_dir, dest_dir):
+        for item in resource_dir.iterdir():
+            if item.name.startswith("_"):
+                continue
+            if item.is_file():
+                dest = os.path.join(dest_dir, item.name)
+                os.makedirs(os.path.dirname(dest), exist_ok=True)
+                with open(dest, "wb") as f:
+                    f.write(item.read_bytes())
+            elif item.is_dir():
+                self._copy_bundled_dir(item, os.path.join(dest_dir, item.name))
+
+    def _copy_custom_theme_assets(self):
         for dirpath, dirnames, filenames in os.walk(self._theme_path):
             # Skip underscore-prefixed directories
             dirnames[:] = [d for d in dirnames if not d.startswith("_")]
