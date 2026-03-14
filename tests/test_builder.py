@@ -479,6 +479,29 @@ def test_render_site_context(tmp_path):
     assert "en-us" in html
 
 
+def test_render_generator_context(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "index.md").write_text("# Hi")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "default.html").write_text(
+        "{{ generator.name }} {{ generator.package }} {{ generator.version }}"
+    )
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    Builder(config).render(root, str(source))
+
+    html = (public / "index.html").read_text()
+    assert "Static Gallery" in html
+    assert "static-gallery" in html
+    assert "0.1.0" in html
+
+
 def test_render_public_defaults_to_public_dir(tmp_path):
     source = tmp_path / "source"
     source.mkdir()

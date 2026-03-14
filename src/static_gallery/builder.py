@@ -1,3 +1,4 @@
+import importlib.metadata
 import importlib.resources
 import logging
 import os
@@ -30,6 +31,13 @@ class Builder:
             autoescape=True,
         )
         self._md = MarkdownRenderer()
+        meta = importlib.metadata.metadata("static-gallery")
+        package = meta["Name"]
+        self._generator = {
+            "name": package.replace("-", " ").title(),
+            "package": package,
+            "version": meta["Version"],
+        }
 
     def render(self, root_node, source_path):
         self._source_path = os.path.abspath(source_path)
@@ -48,7 +56,9 @@ class Builder:
         template = self.env.get_template(template_name)
 
         page_ctx = self._build_page_context(node)
-        html = template.render(site=self.config.site, page=page_ctx)
+        html = template.render(
+            site=self.config.site, page=page_ctx, generator=self._generator
+        )
 
         with open(output_abs, "w") as f:
             f.write(html)
