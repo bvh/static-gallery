@@ -106,11 +106,14 @@ class Builder:
         if not title:
             title = node.stem if node.type == "MARKDOWN" else node.name
 
-        # Build image list with relative URLs
+        # Build image list with relative URLs and metadata
         images = []
         for img in node.images:
             rel = os.path.relpath(img.path, node.path)
-            images.append({"name": img.name, "url": rel})
+            image_data = dict(img.metadata)
+            image_data["name"] = img.name
+            image_data["url"] = rel
+            images.append(image_data)
 
         # Build page list
         pages = []

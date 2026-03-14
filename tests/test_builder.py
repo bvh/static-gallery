@@ -185,6 +185,7 @@ def test_page_context_directory_no_markdown(tmp_path):
     img.type = "IMAGE"
     img.name = "a.jpg"
     img.path = str(sub / "a.jpg")
+    img._metadata = None
     node.images = [img]
     node.pages = []
     node.dirs = []

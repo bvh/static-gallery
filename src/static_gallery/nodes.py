@@ -1,6 +1,8 @@
 import json
 import os
 
+from static_gallery.metadata import read_metadata
+
 
 class Node:
     def __init__(self, path, parent=None, type=None):
@@ -39,6 +41,7 @@ class Node:
         self.pages = []
         self.images = []
         self.assets = []
+        self._metadata = None
 
     def get_markdown_path(self):
         path = None
@@ -61,6 +64,17 @@ class Node:
             case _:
                 raise ValueError(f"Unknown node type: '{node.type}'.")
         return node.type
+
+    @property
+    def metadata(self):
+        if self.type != "IMAGE":
+            return {}
+        if self._metadata is None:
+            try:
+                self._metadata = read_metadata(self.path)
+            except Exception:
+                self._metadata = {}
+        return self._metadata
 
     def is_image(self):
         suffixes = [".jpg", ".jpeg", ".webp", ".png", ".gif"]

@@ -57,6 +57,48 @@ site.language: en-us
 site.url: https://example.com
 ```
 
+### Image Metadata
+
+EXIF, IPTC, and XMP metadata is automatically extracted from image files and
+made available in templates. In gallery and directory templates, each image
+dict includes metadata fields alongside `name` and `url`:
+
+| Field | Description |
+|-------|-------------|
+| `title` | IPTC object name |
+| `description` | Image description (EXIF or IPTC caption) |
+| `alt_text` | Accessibility text (XMP, falls back to description/title) |
+| `artist` | Photographer name |
+| `copyright` | Copyright notice |
+| `datetime` | Date taken (Python `datetime` object) |
+| `shutter` | Shutter speed (e.g., "1/250") |
+| `aperture` | Aperture (e.g., "f/2.8") |
+| `iso` | ISO sensitivity |
+| `focal_length` | Focal length (e.g., "50mm") |
+| `focal_length_35` | 35mm equivalent focal length |
+| `camera` | Camera model |
+| `camera_make` | Camera manufacturer |
+| `lens_model` | Lens model |
+| `lens_make` | Lens manufacturer |
+| `country`, `city`, `location` | IPTC location fields |
+| `province_state` (aliases: `state`, `province`) | State/province |
+| `gps_latitude`, `gps_longitude` | Decimal GPS coordinates |
+| `keywords` | List of keywords |
+| `rating` | Star rating |
+
+Example template usage:
+```html
+{% for img in page.images %}
+  <figure>
+    <img src="{{ img.url }}" alt="{{ img.alt_text or img.name }}">
+    <figcaption>
+      {{ img.title }}
+      {% if img.camera %}Shot on {{ img.camera }}{% endif %}
+    </figcaption>
+  </figure>
+{% endfor %}
+```
+
 ## Development
 
 ### Tests
