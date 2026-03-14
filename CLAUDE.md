@@ -27,7 +27,7 @@ uv run pre-commit run --all-files  # Run ruff linting and formatting checks
 - `config.py` — `StaticGalleryConfig` class with layered precedence: CLI args > env vars > config file > inferred > defaults. Parses `site.conf` files (`key: value` format). Env vars prefixed `STATIC_GALLERY_*` are mapped to config keys.
 - `scanner.py` — `Scanner` class that recursively walks directories, classifies files by extension, creates node tree. `index.md` becomes parent container text (not a separate node). `site.conf` at the root is loaded into config (not a separate node). Directories with only images become GALLERY type; mixed content becomes DIRECTORY.
 - `nodes.py` — `StaticGalleryNode` class with typed child collections (`pages`, `images`, `assets`, `dirs`). Node types: HOME, DIRECTORY, GALLERY, MARKDOWN, IMAGE, STATIC.
-- `markdown.py` — Markdown rendering via `markdown-it-py`. `render_markdown()` supports `extract_title` (pull first H1 as title) and `remove_title` (strip first H1 from output). `render_markdown_file()` is the file-based convenience wrapper.
+- `markdown.py` — `MarkdownRenderer` class wrapping `markdown-it-py`. Single `MarkdownIt` instance reused across calls. `render()` supports `extract_title` (pull first H1 as title) and `remove_title` (strip first H1 from output). `render_file()` is the file-based convenience wrapper. Returns `MarkdownResult(html, title)`.
 
 **Themes:** `theme/default/_default.html` is a Jinja2 template referencing `site.*` and `page.*` variables.
 

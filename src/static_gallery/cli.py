@@ -3,7 +3,7 @@ import logging
 import os
 
 from static_gallery.config import StaticGalleryConfig
-import static_gallery.markdown
+from static_gallery.markdown import MarkdownRenderer
 from static_gallery.scanner import Scanner
 
 CLI_ARG_MAP = {
@@ -55,9 +55,9 @@ def main() -> int:
 
     print()
 
-    result = static_gallery.markdown.render_markdown_file(
-        source_root.get_markdown_path(), remove_title=True
-    )
+    mdr = MarkdownRenderer()
+
+    result = mdr.render_file(source_root.get_markdown_path(), remove_title=True)
     print(result)
 
     return rv
