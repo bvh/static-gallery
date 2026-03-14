@@ -1,11 +1,11 @@
 import os
 
-from static_gallery.nodes import StaticNode
+from static_gallery.nodes import StaticGalleryNode
 
 
 def scan(path, config=None):
     # create root node
-    root = StaticNode(os.path.abspath(path), type="HOME")
+    root = StaticGalleryNode(os.path.abspath(path), type="HOME")
     if root.is_dir():
         scan_directory(root, config=config)
     else:
@@ -37,7 +37,7 @@ def scan_directory(parent, config=None):
                             config.load_file(entry.path)
                     else:
                         # create the child node, with unknown type
-                        child = StaticNode(entry, parent=parent)
+                        child = StaticGalleryNode(entry, parent=parent)
                         if child.is_dir():
                             # if the child is a directory, scan it
                             if not scan_directory(child, config=config):
