@@ -502,6 +502,115 @@ def test_render_generator_context(tmp_path):
     assert "0.1.0" in html
 
 
+def test_bundled_theme_has_generator_meta(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "index.md").write_text("# Hi")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    Builder(config).render(root, str(source))
+
+    html = (public / "index.html").read_text()
+    assert '<meta name="generator"' in html
+    assert "Static Gallery" in html
+
+
+def test_bundled_theme_has_viewport_meta(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "index.md").write_text("# Hi")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    Builder(config).render(root, str(source))
+
+    html = (public / "index.html").read_text()
+    assert '<meta name="viewport"' in html
+
+
+def test_bundled_theme_uses_mdash_not_emdash(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "index.md").write_text("# Hi")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    Builder(config).render(root, str(source))
+
+    html = (public / "index.html").read_text()
+    assert "&mdash;" in html
+    assert "&emdash;" not in html
+
+
+def test_bundled_gallery_uses_alt_text(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    photos = source / "photos"
+    photos.mkdir()
+    (photos / "a.jpg").write_bytes(b"\xff\xd8\xff")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    # Inject alt_text metadata for test
+    gallery_node = root.dirs[0]
+    gallery_node.images[0]._metadata = {"alt_text": "A sunset photo"}
+
+    Builder(config).render(root, str(source))
+
+    html = (public / "photos" / "index.html").read_text()
+    assert 'alt="A sunset photo"' in html
+
+
+def test_bundled_gallery_alt_falls_back_to_name(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    photos = source / "photos"
+    photos.mkdir()
+    (photos / "a.jpg").write_bytes(b"\xff\xd8\xff")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    # No metadata — alt_text will be None
+    gallery_node = root.dirs[0]
+    gallery_node.images[0]._metadata = {}
+
+    Builder(config).render(root, str(source))
+
+    html = (public / "photos" / "index.html").read_text()
+    assert 'alt="a.jpg"' in html
+
+
+def test_bundled_gallery_no_figcaption_without_metadata(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    photos = source / "photos"
+    photos.mkdir()
+    (photos / "a.jpg").write_bytes(b"\xff\xd8\xff")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    gallery_node = root.dirs[0]
+    gallery_node.images[0]._metadata = {}
+
+    Builder(config).render(root, str(source))
+
+    html = (public / "photos" / "index.html").read_text()
+    assert "<figcaption>" not in html
+
+
 def test_render_public_defaults_to_public_dir(tmp_path):
     source = tmp_path / "source"
     source.mkdir()
