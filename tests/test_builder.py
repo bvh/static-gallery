@@ -1,5 +1,7 @@
 import os
 
+import pytest
+
 from static_gallery.config import Config
 from static_gallery.node import Node
 from static_gallery.builder import Builder
@@ -599,6 +601,81 @@ def test_bundled_gallery_no_figcaption_without_metadata(tmp_path):
 
     html = (public / "photos" / "index.html").read_text()
     assert "<figcaption>" not in html
+
+
+# --- collision detection ---
+
+
+def test_markdown_directory_collision(tmp_path):
+    """blog.md + blog/index.md both map to blog/index.html — should error."""
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "blog.md").write_text("# Blog page")
+    blog = source / "blog"
+    blog.mkdir()
+    (blog / "index.md").write_text("# Blog index")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "default.html").write_text("{{ page.title }}")
+    (theme / "directory.html").write_text("{{ page.title }}")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+
+    with pytest.raises(RuntimeError, match="blog/index.html"):
+        Builder(config).render(root, str(source))
+
+
+def test_markdown_directory_static_collision(tmp_path):
+    """archive.md + archive/index.html (static asset) both map to archive/index.html."""
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "archive.md").write_text("# Archive page")
+    archive = source / "archive"
+    archive.mkdir()
+    (archive / "index.html").write_text("<h1>Static archive</h1>")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "default.html").write_text("{{ page.title }}")
+    (theme / "directory.html").write_text("{{ page.title }}")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+
+    with pytest.raises(RuntimeError, match="archive/index.html"):
+        Builder(config).render(root, str(source))
+
+
+def test_no_collision_normal_site(tmp_path):
+    """A typical site with no conflicts should build without error."""
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "index.md").write_text("# Home")
+    (source / "about.md").write_text("# About")
+    blog = source / "blog"
+    blog.mkdir()
+    (blog / "post.md").write_text("# Post")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "default.html").write_text("{{ page.title }}")
+    (theme / "directory.html").write_text("{{ page.title }}")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    Builder(config).render(root, str(source))
+
+    assert (public / "index.html").exists()
+    assert (public / "about" / "index.html").exists()
+    assert (public / "blog" / "post" / "index.html").exists()
 
 
 def test_render_public_defaults_to_public_dir(tmp_path):

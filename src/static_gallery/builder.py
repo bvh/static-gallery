@@ -42,11 +42,51 @@ class Builder:
 
     def render(self, root_node, source_path):
         self._source_path = os.path.abspath(source_path)
+        path_map = {}
+        self._collect_output_paths(root_node, path_map)
+        self._check_collisions(path_map)
         os.makedirs(self._public_path, exist_ok=True)
         logger.info("Rendering site to %s", self._public_path)
         self._render_node(root_node)
         self._copy_theme_assets()
         logger.info("Site rendered successfully")
+
+    def _collect_output_paths(self, node, path_map):
+        # Rendered HTML for this node
+        output_rel = self._get_output_path(node, self._source_path)
+        source_rel = os.path.relpath(node.path, self._source_path)
+        path_map.setdefault(output_rel, []).append(source_rel)
+
+        # Copied images
+        for img in node.images:
+            img_rel = os.path.relpath(img.path, self._source_path)
+            path_map.setdefault(img_rel, []).append(img_rel)
+
+        # Copied static assets
+        for asset in node.assets:
+            asset_rel = os.path.relpath(asset.path, self._source_path)
+            path_map.setdefault(asset_rel, []).append(asset_rel)
+
+        for page in node.pages:
+            self._collect_output_paths(page, path_map)
+
+        for d in node.dirs:
+            self._collect_output_paths(d, path_map)
+
+    def _check_collisions(self, path_map):
+        """Raise an error if any output path has multiple distinct sources."""
+        collisions = {}
+        for output_path, sources in path_map.items():
+            unique = list(dict.fromkeys(sources))
+            if len(unique) > 1:
+                collisions[output_path] = unique
+        if collisions:
+            lines = []
+            for output_path, sources in collisions.items():
+                sources_str = ", ".join(sources)
+                lines.append(f"  {output_path} <- {sources_str}")
+            msg = "Output path collision detected:\n" + "\n".join(lines)
+            raise RuntimeError(msg)
 
     def _render_node(self, node):
         output_rel = self._get_output_path(node, self._source_path)
