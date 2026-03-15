@@ -1,7 +1,20 @@
 import json
+import logging
 import os
+from enum import StrEnum
 
 from static_gallery.metadata import read_metadata
+
+logger = logging.getLogger(__name__)
+
+
+class NodeType(StrEnum):
+    HOME = "HOME"
+    DIRECTORY = "DIRECTORY"
+    GALLERY = "GALLERY"
+    MARKDOWN = "MARKDOWN"
+    IMAGE = "IMAGE"
+    STATIC = "STATIC"
 
 
 class Node:
@@ -45,21 +58,21 @@ class Node:
 
     def get_markdown_path(self):
         path = None
-        if self.type == "MARKDOWN":
+        if self.type == NodeType.MARKDOWN:
             path = self.path
-        elif self.type in ["DIRECTORY", "GALLERY", "HOME"]:
+        elif self.type in (NodeType.DIRECTORY, NodeType.GALLERY, NodeType.HOME):
             path = self.index_path
         return path
 
     def add_child(self, node):
         match node.type:
-            case "MARKDOWN":
+            case NodeType.MARKDOWN:
                 self.pages.append(node)
-            case "IMAGE":
+            case NodeType.IMAGE:
                 self.images.append(node)
-            case "STATIC":
+            case NodeType.STATIC:
                 self.assets.append(node)
-            case "DIRECTORY" | "GALLERY":
+            case NodeType.DIRECTORY | NodeType.GALLERY:
                 self.dirs.append(node)
             case _:
                 raise ValueError(f"Unknown node type: '{node.type}'.")
@@ -67,26 +80,29 @@ class Node:
 
     @property
     def metadata(self):
-        if self.type != "IMAGE":
+        if self.type != NodeType.IMAGE:
             return {}
         if self._metadata is None:
             try:
                 self._metadata = read_metadata(self.path)
             except Exception:
+                logger.warning(
+                    "Failed to read metadata from %s", self.path, exc_info=True
+                )
                 self._metadata = {}
         return self._metadata
 
     @property
     def template_name(self):
-        if self.type == "GALLERY":
+        if self.type == NodeType.GALLERY:
             return "gallery.html"
-        if self.type == "DIRECTORY" and not self.index_path:
+        if self.type == NodeType.DIRECTORY and not self.index_path:
             return "directory.html"
         return "default.html"
 
     @property
     def title_fallback(self):
-        return self.stem if self.type == "MARKDOWN" else self.name
+        return self.stem if self.type == NodeType.MARKDOWN else self.name
 
     def is_image(self):
         suffixes = [".jpg", ".jpeg", ".webp", ".png", ".gif"]

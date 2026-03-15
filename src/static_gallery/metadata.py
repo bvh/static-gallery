@@ -149,6 +149,8 @@ def read_metadata(path):
 
     Returns a dict of human-readable metadata fields. Missing fields are None.
     """
+    result = {f: None for f in FIELDS}
+
     try:
         img = pyexiv2.Image(path)
         try:
@@ -159,110 +161,84 @@ def read_metadata(path):
             img.close()
     except Exception:
         logger.debug("Failed to read metadata from %s", path, exc_info=True)
-        return _empty_metadata()
+        return result
 
-    title = _get(iptc, "Iptc.Application2.ObjectName")
-    description = _get(exif, "Exif.Image.ImageDescription") or _get(
+    result["title"] = _get(iptc, "Iptc.Application2.ObjectName")
+    result["description"] = _get(exif, "Exif.Image.ImageDescription") or _get(
         iptc, "Iptc.Application2.Caption"
     )
 
     # alt_text: XMP AltTextAccessibility → description → title
-    alt_text = _get(xmp, "Xmp.iptcExt.AltTextAccessibility")
-    if alt_text is None:
-        alt_text = description if description else title
+    result["alt_text"] = _get(xmp, "Xmp.iptcExt.AltTextAccessibility")
+    if result["alt_text"] is None:
+        result["alt_text"] = (
+            result["description"] if result["description"] else result["title"]
+        )
 
-    artist = _get(exif, "Exif.Image.Artist") or _get(iptc, "Iptc.Application2.Byline")
-    copyright_ = _get(exif, "Exif.Image.Copyright") or _get(
+    result["artist"] = _get(exif, "Exif.Image.Artist") or _get(
+        iptc, "Iptc.Application2.Byline"
+    )
+    result["copyright"] = _get(exif, "Exif.Image.Copyright") or _get(
         iptc, "Iptc.Application2.Copyright"
     )
 
     # datetime
-    dt = _parse_exif_datetime(_get(exif, "Exif.Photo.DateTimeOriginal"))
-    if dt is None:
-        dt = _parse_iptc_datetime(
+    result["datetime"] = _parse_exif_datetime(_get(exif, "Exif.Photo.DateTimeOriginal"))
+    if result["datetime"] is None:
+        result["datetime"] = _parse_iptc_datetime(
             _get(iptc, "Iptc.Application2.DateCreated"),
             _get(iptc, "Iptc.Application2.TimeCreated"),
         )
 
     # Exposure
-    shutter = _format_shutter(_get(exif, "Exif.Photo.ExposureTime"))
-    if shutter is None:
-        shutter = _format_shutter(_get(exif, "Exif.Photo.ShutterSpeedValue"))
-    aperture = _format_aperture(_get(exif, "Exif.Photo.FNumber"))
-    if aperture is None:
-        aperture = _format_aperture(_get(exif, "Exif.Photo.ApertureValue"))
-    iso = _get(exif, "Exif.Photo.ISOSpeedRatings")
+    result["shutter"] = _format_shutter(_get(exif, "Exif.Photo.ExposureTime"))
+    if result["shutter"] is None:
+        result["shutter"] = _format_shutter(_get(exif, "Exif.Photo.ShutterSpeedValue"))
+    result["aperture"] = _format_aperture(_get(exif, "Exif.Photo.FNumber"))
+    if result["aperture"] is None:
+        result["aperture"] = _format_aperture(_get(exif, "Exif.Photo.ApertureValue"))
+    result["iso"] = _get(exif, "Exif.Photo.ISOSpeedRatings")
 
     # Focal length
-    focal_length = _format_focal_length(_get(exif, "Exif.Photo.FocalLength"))
-    focal_length_35 = _format_focal_length(
+    result["focal_length"] = _format_focal_length(_get(exif, "Exif.Photo.FocalLength"))
+    result["focal_length_35"] = _format_focal_length(
         _get(exif, "Exif.Photo.FocalLengthIn35mmFilm")
     )
 
     # Camera/lens
-    camera = _get(exif, "Exif.Image.Model")
-    camera_make = _get(exif, "Exif.Image.Make")
-    lens = _get(exif, "Exif.Photo.LensSpecification")
-    lens_model = _get(exif, "Exif.Photo.LensModel")
-    lens_make = _get(exif, "Exif.Photo.LensMake")
+    result["camera"] = _get(exif, "Exif.Image.Model")
+    result["camera_make"] = _get(exif, "Exif.Image.Make")
+    result["lens"] = _get(exif, "Exif.Photo.LensSpecification")
+    result["lens_model"] = _get(exif, "Exif.Photo.LensModel")
+    result["lens_make"] = _get(exif, "Exif.Photo.LensMake")
 
     # Location (IPTC)
-    country_code = _get(iptc, "Iptc.Application2.CountryCode")
-    country = _get(iptc, "Iptc.Application2.CountryName")
-    province_state = _get(iptc, "Iptc.Application2.ProvinceState")
-    city = _get(iptc, "Iptc.Application2.City")
-    location = _get(iptc, "Iptc.Application2.SubLocation")
+    result["country_code"] = _get(iptc, "Iptc.Application2.CountryCode")
+    result["country"] = _get(iptc, "Iptc.Application2.CountryName")
+    result["province_state"] = _get(iptc, "Iptc.Application2.ProvinceState")
+    result["city"] = _get(iptc, "Iptc.Application2.City")
+    result["location"] = _get(iptc, "Iptc.Application2.SubLocation")
 
     # GPS
-    gps_latitude = _parse_gps_coordinate(
+    result["gps_latitude"] = _parse_gps_coordinate(
         _get(exif, "Exif.GPSInfo.GPSLatitude"),
         _get(exif, "Exif.GPSInfo.GPSLatitudeRef"),
     )
-    gps_longitude = _parse_gps_coordinate(
+    result["gps_longitude"] = _parse_gps_coordinate(
         _get(exif, "Exif.GPSInfo.GPSLongitude"),
         _get(exif, "Exif.GPSInfo.GPSLongitudeRef"),
     )
 
     # Keywords
-    keywords = _get(iptc, "Iptc.Application2.Keywords")
-    if keywords is None:
-        keywords = _get(xmp, "Xmp.dc.subject")
+    result["keywords"] = _get(iptc, "Iptc.Application2.Keywords")
+    if result["keywords"] is None:
+        result["keywords"] = _get(xmp, "Xmp.dc.subject")
 
     # Rating
-    rating = _get(xmp, "Xmp.xmp.Rating")
+    result["rating"] = _get(xmp, "Xmp.xmp.Rating")
 
-    return {
-        "title": title,
-        "description": description,
-        "alt_text": alt_text,
-        "artist": artist,
-        "copyright": copyright_,
-        "datetime": dt,
-        "shutter": shutter,
-        "aperture": aperture,
-        "iso": iso,
-        "focal_length": focal_length,
-        "focal_length_35": focal_length_35,
-        "camera": camera,
-        "camera_make": camera_make,
-        "lens": lens,
-        "lens_model": lens_model,
-        "lens_make": lens_make,
-        "country_code": country_code,
-        "country": country,
-        "province_state": province_state,
-        "city": city,
-        "location": location,
-        "gps_latitude": gps_latitude,
-        "gps_longitude": gps_longitude,
-        "keywords": keywords,
-        "rating": rating,
-        # Aliases
-        "state": province_state,
-        "province": province_state,
-    }
+    # Aliases
+    result["state"] = result["province_state"]
+    result["province"] = result["province_state"]
 
-
-def _empty_metadata():
-    """Return a metadata dict with all fields set to None."""
-    return {f: None for f in FIELDS}
+    return result

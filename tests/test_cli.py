@@ -1,7 +1,7 @@
 import sys
 from unittest.mock import patch, MagicMock
 
-from static_gallery.cli import main
+from static_gallery.cli import main, _serve
 
 
 def test_cli_title_arg(tmp_path, monkeypatch):
@@ -66,4 +66,15 @@ def test_serve_keyboard_interrupt_exits_cleanly(tmp_path, monkeypatch):
     with patch("static_gallery.cli.HTTPServer", return_value=mock_server):
         rv = main()
     assert rv == 0
+    mock_server.server_close.assert_called_once()
+
+
+def test_serve_function_creates_server_with_correct_args(tmp_path):
+    mock_server = MagicMock()
+    with patch("static_gallery.cli.HTTPServer", return_value=mock_server) as mock_cls:
+        mock_server.serve_forever.side_effect = KeyboardInterrupt
+        _serve(str(tmp_path), 9000)
+    addr, handler_partial = mock_cls.call_args[0]
+    assert addr == ("", 9000)
+    assert handler_partial.keywords["directory"] == str(tmp_path)
     mock_server.server_close.assert_called_once()

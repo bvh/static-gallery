@@ -8,6 +8,7 @@ from jinja2 import Environment, FileSystemLoader, PackageLoader
 from markupsafe import Markup
 
 from static_gallery.markdown import MarkdownRenderer
+from static_gallery.node import NodeType
 
 logger = logging.getLogger(__name__)
 
@@ -85,9 +86,9 @@ class Builder:
             self._render_node(d)
 
     def _get_output_path(self, node, source_path):
-        if node.type == "HOME":
+        if node.type == NodeType.HOME:
             return "index.html"
-        elif node.type == "MARKDOWN":
+        elif node.type == NodeType.MARKDOWN:
             rel = os.path.relpath(node.path, source_path)
             stem = os.path.splitext(rel)[0]
             return os.path.join(stem, "index.html")

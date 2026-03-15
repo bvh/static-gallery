@@ -1,6 +1,6 @@
 import os
 
-from static_gallery.node import Node
+from static_gallery.node import Node, NodeType
 
 
 class Scanner:
@@ -8,7 +8,7 @@ class Scanner:
         self.config = config
 
     def scan(self, path):
-        root = Node(os.path.abspath(path), type="HOME")
+        root = Node(os.path.abspath(path), type=NodeType.HOME)
         if root.is_dir():
             self._scan_directory(root)
         else:
@@ -33,7 +33,7 @@ class Scanner:
                         # the config object and do not treat it as a separate node
                         elif (
                             entry.name.lower().startswith("site.conf")
-                            and parent.type == "HOME"
+                            and parent.type == NodeType.HOME
                         ):
                             if self.config and not self.config.config_path:
                                 self.config.load_file(entry.path)
@@ -47,16 +47,18 @@ class Scanner:
                                     continue
                                 # directories containing only images are galleries
                                 child.type = (
-                                    "GALLERY" if child.is_gallery() else "DIRECTORY"
+                                    NodeType.GALLERY
+                                    if child.is_gallery()
+                                    else NodeType.DIRECTORY
                                 )
                             # if not a directory, figure out what type it is
                             elif child.is_markdown():
-                                child.type = "MARKDOWN"
+                                child.type = NodeType.MARKDOWN
                             elif child.is_image():
-                                child.type = "IMAGE"
+                                child.type = NodeType.IMAGE
                             else:
                                 # if not markdown or an image, must be static
-                                child.type = "STATIC"
+                                child.type = NodeType.STATIC
                             # add the child
                             parent.add_child(child)
                             count += 1  # container is not empty

@@ -18,9 +18,7 @@ CLI_ARG_MAP = {
 }
 
 
-def main() -> int:
-    logging.basicConfig(level=logging.INFO)
-
+def _build_parser():
     parser = argparse.ArgumentParser(
         description="static site and image gallery generator"
     )
@@ -45,7 +43,13 @@ def main() -> int:
         default=8000,
         help="port for the HTTP server (default: 8000)",
     )
-    args = parser.parse_args()
+    return parser
+
+
+def main() -> int:
+    logging.basicConfig(level=logging.INFO)
+
+    args = _build_parser().parse_args()
 
     cli_args = {}
     for arg_name, config_key in CLI_ARG_MAP.items():
@@ -67,15 +71,18 @@ def main() -> int:
         return 1
 
     if args.serve:
-        public_path = os.path.abspath(config.public_path)
-        handler = functools.partial(SimpleHTTPRequestHandler, directory=public_path)
-        server = HTTPServer(("", args.port), handler)
-        print(f"Serving at http://localhost:{args.port} — press Ctrl+C to stop")
-        try:
-            server.serve_forever()
-        except KeyboardInterrupt:
-            pass
-        finally:
-            server.server_close()
+        _serve(os.path.abspath(config.public_path), args.port)
 
     return 0
+
+
+def _serve(public_path, port):
+    handler = functools.partial(SimpleHTTPRequestHandler, directory=public_path)
+    server = HTTPServer(("", port), handler)
+    print(f"Serving at http://localhost:{port} — press Ctrl+C to stop")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
