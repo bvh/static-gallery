@@ -33,9 +33,9 @@ class Node:
         self.type = type
         self.parent = parent
 
-        # For containers, if there's an index file, that's the text content
-        # of the container. It starts as None until the directory is scanned.
-        self.text = None
+        # For containers, path to an index.md file if one exists.
+        # Starts as None until the directory is scanned.
+        self.index_path = None
 
         self.dirs = []
         self.pages = []
@@ -48,7 +48,7 @@ class Node:
         if self.type == "MARKDOWN":
             path = self.path
         elif self.type in ["DIRECTORY", "GALLERY", "HOME"]:
-            path = self.text
+            path = self.index_path
         return path
 
     def add_child(self, node):
@@ -76,6 +76,18 @@ class Node:
                 self._metadata = {}
         return self._metadata
 
+    @property
+    def template_name(self):
+        if self.type == "GALLERY":
+            return "gallery.html"
+        if self.type == "DIRECTORY" and not self.index_path:
+            return "directory.html"
+        return "default.html"
+
+    @property
+    def title_fallback(self):
+        return self.stem if self.type == "MARKDOWN" else self.name
+
     def is_image(self):
         suffixes = [".jpg", ".jpeg", ".webp", ".png", ".gif"]
         if self.suffix.lower() in suffixes:
@@ -101,8 +113,8 @@ class Node:
         data["stem"] = self.stem
         data["suffix"] = self.suffix
         data["mtime"] = self.mtime
-        if self.text:
-            data["text"] = self.text
+        if self.index_path:
+            data["index_path"] = self.index_path
         if self.parent:
             data["parent"] = self.parent.path
         if len(self.pages):

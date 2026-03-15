@@ -26,7 +26,7 @@ class Scanner:
                         # if name is index.md, it becomes the text source for the
                         # container and is not treated as a separate node
                         if entry.name.lower() == "index.md":
-                            parent.text = entry.path
+                            parent.index_path = entry.path
                             parent.mtime = entry.stat().st_mtime
                             count += 1  # container is not empty
                         # if this is THE site configuration file, load it into

@@ -39,7 +39,7 @@ def test_index_md_sets_parent_text(tmp_path):
     index = tmp_path / "index.md"
     index.write_text("# Home")
     root = Scanner().scan(str(tmp_path))
-    assert root.text == str(index)
+    assert root.index_path == str(index)
     # index.md should not appear as a separate page node
     assert len(root.pages) == 0
 
@@ -153,7 +153,7 @@ def test_recursive_scanning(tmp_path):
 
     root = Scanner().scan(str(tmp_path))
     assert root.type == "HOME"
-    assert root.text is not None
+    assert root.index_path is not None
     assert len(root.dirs) == 1
 
     sub_node = root.dirs[0]
@@ -191,7 +191,7 @@ def test_index_md_case_insensitive(tmp_path):
     index = tmp_path / "INDEX.MD"
     index.write_text("# Upper")
     root = Scanner().scan(str(tmp_path))
-    assert root.text == str(index)
+    assert root.index_path == str(index)
     assert len(root.pages) == 0
 
 

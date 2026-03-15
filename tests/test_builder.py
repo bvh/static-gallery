@@ -12,7 +12,7 @@ def _make_home(tmp_path, index_text=None):
     if index_text is not None:
         index = tmp_path / "index.md"
         index.write_text(index_text)
-        root.text = str(index)
+        root.index_path = str(index)
     return root
 
 
@@ -103,50 +103,40 @@ def test_output_path_nested_markdown(tmp_path):
     assert r._get_output_path(page, tmp_path) == "blog/post/index.html"
 
 
-# --- _get_template_name ---
+# --- template_name ---
 
 
 def test_template_name_home():
-    config = Config()
-    r = Builder(config)
     node = Node.__new__(Node)
     node.type = "HOME"
-    node.text = "/some/index.md"
-    assert r._get_template_name(node) == "default.html"
+    node.index_path = "/some/index.md"
+    assert node.template_name == "default.html"
 
 
 def test_template_name_markdown():
-    config = Config()
-    r = Builder(config)
     node = Node.__new__(Node)
     node.type = "MARKDOWN"
-    assert r._get_template_name(node) == "default.html"
+    assert node.template_name == "default.html"
 
 
 def test_template_name_directory_with_index():
-    config = Config()
-    r = Builder(config)
     node = Node.__new__(Node)
     node.type = "DIRECTORY"
-    node.text = "/some/index.md"
-    assert r._get_template_name(node) == "default.html"
+    node.index_path = "/some/index.md"
+    assert node.template_name == "default.html"
 
 
 def test_template_name_directory_without_index():
-    config = Config()
-    r = Builder(config)
     node = Node.__new__(Node)
     node.type = "DIRECTORY"
-    node.text = None
-    assert r._get_template_name(node) == "directory.html"
+    node.index_path = None
+    assert node.template_name == "directory.html"
 
 
 def test_template_name_gallery():
-    config = Config()
-    r = Builder(config)
     node = Node.__new__(Node)
     node.type = "GALLERY"
-    assert r._get_template_name(node) == "gallery.html"
+    assert node.template_name == "gallery.html"
 
 
 # --- _build_page_context ---
@@ -180,7 +170,7 @@ def test_page_context_directory_no_markdown(tmp_path):
     sub = tmp_path / "photos"
     sub.mkdir()
     node = Node(str(sub), type="GALLERY")
-    node.text = None
+    node.index_path = None
     img = Node.__new__(Node)
     img.type = "IMAGE"
     img.name = "a.jpg"
@@ -203,7 +193,7 @@ def test_page_context_directory_with_children(tmp_path):
     sub = tmp_path / "blog"
     sub.mkdir()
     node = Node(str(sub), type="DIRECTORY")
-    node.text = None
+    node.index_path = None
 
     page = Node.__new__(Node)
     page.type = "MARKDOWN"

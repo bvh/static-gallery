@@ -52,8 +52,7 @@ class Builder:
         output_abs = os.path.join(self._public_path, output_rel)
         os.makedirs(os.path.dirname(output_abs), exist_ok=True)
 
-        template_name = self._get_template_name(node)
-        template = self.env.get_template(template_name)
+        template = self.env.get_template(node.template_name)
 
         page_ctx = self._build_page_context(node)
         html = template.render(
@@ -96,13 +95,6 @@ class Builder:
             rel = os.path.relpath(node.path, source_path)
             return os.path.join(rel, "index.html")
 
-    def _get_template_name(self, node):
-        if node.type == "GALLERY":
-            return "gallery.html"
-        if node.type == "DIRECTORY" and not node.text:
-            return "directory.html"
-        return "default.html"
-
     def _build_page_context(self, node):
         md_path = node.get_markdown_path()
         title = None
@@ -114,7 +106,7 @@ class Builder:
             content = Markup(result.html)
 
         if not title:
-            title = node.stem if node.type == "MARKDOWN" else node.name
+            title = node.title_fallback
 
         # Build image list with relative URLs and metadata
         images = []
