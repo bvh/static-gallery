@@ -199,3 +199,57 @@ def test_child_nodes_have_parent_set(tmp_path):
     (tmp_path / "page.md").write_text("# Page")
     root = Scanner().scan(str(tmp_path))
     assert root.pages[0].parent is root
+
+
+def test_paired_markdown_sets_content_path(tmp_path):
+    """photo.md paired with photo.jpg sets content_path on the IMAGE node."""
+    (tmp_path / "photo.jpg").write_bytes(b"\xff\xd8\xff")
+    (tmp_path / "photo.md").write_text("# My Photo\n\nA beautiful sunset.")
+    root = Scanner().scan(str(tmp_path))
+    assert len(root.images) == 1
+    assert len(root.pages) == 0
+    assert root.images[0].content_path == str(tmp_path / "photo.md")
+
+
+def test_unpaired_markdown_remains_page(tmp_path):
+    """Markdown without a matching image stem stays as a page."""
+    (tmp_path / "photo.jpg").write_bytes(b"\xff\xd8\xff")
+    (tmp_path / "about.md").write_text("# About")
+    root = Scanner().scan(str(tmp_path))
+    assert len(root.images) == 1
+    assert len(root.pages) == 1
+    assert root.pages[0].name == "about.md"
+
+
+def test_paired_markdown_gallery_classification(tmp_path):
+    """Directory with only images + paired markdown is still a GALLERY."""
+    gallery = tmp_path / "photos"
+    gallery.mkdir()
+    (gallery / "a.jpg").write_bytes(b"\xff\xd8\xff")
+    (gallery / "b.jpg").write_bytes(b"\xff\xd8\xff")
+    (gallery / "a.md").write_text("# Photo A")
+    root = Scanner().scan(str(tmp_path))
+    assert root.dirs[0].type == "GALLERY"
+    assert len(root.dirs[0].images) == 2
+    assert len(root.dirs[0].pages) == 0
+
+
+def test_paired_markdown_mixed_directory(tmp_path):
+    """Paired markdown + unpaired markdown = DIRECTORY not GALLERY."""
+    sub = tmp_path / "mixed"
+    sub.mkdir()
+    (sub / "photo.jpg").write_bytes(b"\xff\xd8\xff")
+    (sub / "photo.md").write_text("# Photo")
+    (sub / "about.md").write_text("# About")
+    root = Scanner().scan(str(tmp_path))
+    assert root.dirs[0].type == "DIRECTORY"
+
+
+def test_index_md_not_paired_with_image(tmp_path):
+    """index.md is consumed as container text, not paired with index.jpg."""
+    (tmp_path / "index.md").write_text("# Home")
+    (tmp_path / "index.jpg").write_bytes(b"\xff\xd8\xff")
+    root = Scanner().scan(str(tmp_path))
+    assert root.index_path == str(tmp_path / "index.md")
+    assert len(root.images) == 1
+    assert root.images[0].content_path is None

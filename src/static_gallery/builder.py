@@ -57,10 +57,12 @@ class Builder:
         source_rel = os.path.relpath(node.path, self._source_path)
         path_map.setdefault(output_rel, []).append(source_rel)
 
-        # Copied images
+        # Image nodes get an HTML page + relocated image file
         for img in node.images:
-            img_rel = os.path.relpath(img.path, self._source_path)
-            path_map.setdefault(img_rel, []).append(img_rel)
+            self._collect_output_paths(img, path_map)
+            img_file_rel = self._get_image_file_output_path(img, self._source_path)
+            img_source_rel = os.path.relpath(img.path, self._source_path)
+            path_map.setdefault(img_file_rel, []).append(img_source_rel)
 
         # Copied static assets
         for asset in node.assets:
@@ -103,12 +105,13 @@ class Builder:
         with open(output_abs, "w") as f:
             f.write(html)
 
-        # Copy images
+        # Render image pages and copy image files
         for img in node.images:
-            img_rel = os.path.relpath(img.path, self._source_path)
-            img_dest = os.path.join(self._public_path, img_rel)
-            os.makedirs(os.path.dirname(img_dest), exist_ok=True)
-            shutil.copy2(img.path, img_dest)
+            self._render_node(img)
+            img_file_rel = self._get_image_file_output_path(img, self._source_path)
+            img_file_abs = os.path.join(self._public_path, img_file_rel)
+            os.makedirs(os.path.dirname(img_file_abs), exist_ok=True)
+            shutil.copy2(img.path, img_file_abs)
 
         # Copy static assets
         for asset in node.assets:
@@ -128,13 +131,18 @@ class Builder:
     def _get_output_path(self, node, source_path):
         if node.type == NodeType.HOME:
             return "index.html"
-        elif node.type == NodeType.MARKDOWN:
+        elif node.type in (NodeType.MARKDOWN, NodeType.IMAGE):
             rel = os.path.relpath(node.path, source_path)
             stem = os.path.splitext(rel)[0]
             return os.path.join(stem, "index.html")
         else:
             rel = os.path.relpath(node.path, source_path)
             return os.path.join(rel, "index.html")
+
+    def _get_image_file_output_path(self, node, source_path):
+        rel = os.path.relpath(node.path, source_path)
+        stem = os.path.splitext(rel)[0]
+        return os.path.join(stem, node.name)
 
     def _build_page_context(self, node):
         md_path = node.get_markdown_path()
@@ -149,14 +157,27 @@ class Builder:
         if not title:
             title = node.title_fallback
 
-        # Build image list with relative URLs and metadata
-        images = []
-        for img in node.images:
-            rel = os.path.relpath(img.path, node.path)
-            image_data = dict(img.metadata)
-            image_data["name"] = img.name
-            image_data["url"] = rel
-            images.append(image_data)
+        ctx = {
+            "title": title,
+            "content": content,
+        }
+
+        if node.type == NodeType.IMAGE:
+            # Single image page context
+            image_data = dict(node.metadata)
+            image_data["name"] = node.name
+            image_data["url"] = node.name
+            ctx["image"] = image_data
+        else:
+            # Build image list with links to image pages
+            images = []
+            for img in node.images:
+                image_data = dict(img.metadata)
+                image_data["name"] = img.name
+                image_data["url"] = img.stem + "/"
+                image_data["src"] = img.stem + "/" + img.name
+                images.append(image_data)
+            ctx["images"] = images
 
         # Build page list
         pages = []
@@ -168,13 +189,10 @@ class Builder:
         for d in node.dirs:
             dirs.append({"name": d.name, "url": d.name + "/"})
 
-        return {
-            "title": title,
-            "content": content,
-            "images": images,
-            "pages": pages,
-            "dirs": dirs,
-        }
+        ctx["pages"] = pages
+        ctx["dirs"] = dirs
+
+        return ctx
 
     def _copy_theme_assets(self):
         if self._bundled_theme:

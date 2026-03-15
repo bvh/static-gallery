@@ -176,6 +176,7 @@ def test_page_context_directory_no_markdown(tmp_path):
     img = Node.__new__(Node)
     img.type = "IMAGE"
     img.name = "a.jpg"
+    img.stem = "a"
     img.path = str(sub / "a.jpg")
     img._metadata = None
     node.images = [img]
@@ -186,7 +187,8 @@ def test_page_context_directory_no_markdown(tmp_path):
     assert ctx["content"] == ""
     assert len(ctx["images"]) == 1
     assert ctx["images"][0]["name"] == "a.jpg"
-    assert ctx["images"][0]["url"] == "a.jpg"
+    assert ctx["images"][0]["url"] == "a/"
+    assert ctx["images"][0]["src"] == "a/a.jpg"
 
 
 def test_page_context_directory_with_children(tmp_path):
@@ -388,8 +390,9 @@ def test_render_copies_images(tmp_path):
     theme.mkdir()
     (theme / "default.html").write_text("{{ page.title }}")
     (theme / "gallery.html").write_text(
-        "{% for img in page.images %}{{ img.url }}{% endfor %}"
+        "{% for img in page.images %}{{ img.src }}{% endfor %}"
     )
+    (theme / "image.html").write_text("{{ page.title }}")
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
@@ -397,7 +400,9 @@ def test_render_copies_images(tmp_path):
     root = Scanner(config).scan(str(source))
     Builder(config).render(root, str(source))
 
-    assert (public / "photos" / "a.jpg").exists()
+    # Image now lives in its pretty URL directory
+    assert (public / "photos" / "a" / "a.jpg").exists()
+    assert (public / "photos" / "a" / "index.html").exists()
     assert (public / "photos" / "index.html").exists()
 
 
@@ -552,14 +557,18 @@ def test_bundled_gallery_uses_alt_text(tmp_path):
     config = Config(cli_args={"public_path": str(public)})
 
     root = Scanner(config).scan(str(source))
-    # Inject alt_text metadata for test
     gallery_node = root.dirs[0]
     gallery_node.images[0]._metadata = {"alt_text": "A sunset photo"}
 
     Builder(config).render(root, str(source))
 
-    html = (public / "photos" / "index.html").read_text()
-    assert 'alt="A sunset photo"' in html
+    # Gallery page thumbnail
+    gallery_html = (public / "photos" / "index.html").read_text()
+    assert 'alt="A sunset photo"' in gallery_html
+
+    # Image page
+    img_html = (public / "photos" / "a" / "index.html").read_text()
+    assert 'alt="A sunset photo"' in img_html
 
 
 def test_bundled_gallery_alt_falls_back_to_name(tmp_path):
@@ -573,7 +582,6 @@ def test_bundled_gallery_alt_falls_back_to_name(tmp_path):
     config = Config(cli_args={"public_path": str(public)})
 
     root = Scanner(config).scan(str(source))
-    # No metadata — alt_text will be None
     gallery_node = root.dirs[0]
     gallery_node.images[0]._metadata = {}
 
@@ -599,8 +607,9 @@ def test_bundled_gallery_no_figcaption_without_metadata(tmp_path):
 
     Builder(config).render(root, str(source))
 
-    html = (public / "photos" / "index.html").read_text()
-    assert "<figcaption>" not in html
+    # Gallery page should not have figcaption
+    gallery_html = (public / "photos" / "index.html").read_text()
+    assert "<figcaption>" not in gallery_html
 
 
 # --- collision detection ---
@@ -676,6 +685,180 @@ def test_no_collision_normal_site(tmp_path):
     assert (public / "index.html").exists()
     assert (public / "about" / "index.html").exists()
     assert (public / "blog" / "post" / "index.html").exists()
+
+
+def test_output_path_image(tmp_path):
+    config = Config()
+    r = Builder(config)
+    root = _make_home(tmp_path)
+    img_file = tmp_path / "photo.jpg"
+    img_file.write_bytes(b"\xff\xd8\xff")
+    img = Node(str(img_file), parent=root, type="IMAGE")
+    assert r._get_output_path(img, tmp_path) == "photo/index.html"
+
+
+def test_output_path_nested_image(tmp_path):
+    config = Config()
+    r = Builder(config)
+    root = _make_home(tmp_path)
+    sub = tmp_path / "photos"
+    sub.mkdir()
+    img_file = sub / "sunset.jpg"
+    img_file.write_bytes(b"\xff\xd8\xff")
+    dir_node = Node(str(sub), parent=root, type="GALLERY")
+    img = Node(str(img_file), parent=dir_node, type="IMAGE")
+    assert r._get_output_path(img, tmp_path) == "photos/sunset/index.html"
+
+
+def test_image_file_output_path(tmp_path):
+    config = Config()
+    r = Builder(config)
+    img_file = tmp_path / "photo.jpg"
+    img_file.write_bytes(b"\xff\xd8\xff")
+    img = Node(str(img_file), parent=None, type="IMAGE")
+    assert r._get_image_file_output_path(img, tmp_path) == "photo/photo.jpg"
+
+
+def test_render_image_page(tmp_path):
+    """Each image gets its own HTML page at stem/index.html."""
+    source = tmp_path / "source"
+    source.mkdir()
+    photos = source / "photos"
+    photos.mkdir()
+    (photos / "a.jpg").write_bytes(b"\xff\xd8\xff")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "default.html").write_text("{{ page.title }}")
+    (theme / "gallery.html").write_text(
+        '{% for img in page.images %}<a href="{{ img.url }}"><img src="{{ img.src }}"></a>{% endfor %}'
+    )
+    (theme / "image.html").write_text(
+        '<title>{{ page.title }}</title><img src="{{ page.image.url }}">'
+    )
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    Builder(config).render(root, str(source))
+
+    # Image page exists
+    assert (public / "photos" / "a" / "index.html").exists()
+    img_html = (public / "photos" / "a" / "index.html").read_text()
+    assert "<title>a</title>" in img_html
+    assert 'src="a.jpg"' in img_html
+
+    # Image file relocated to pretty URL dir
+    assert (public / "photos" / "a" / "a.jpg").exists()
+
+    # Gallery page links correctly
+    gallery_html = (public / "photos" / "index.html").read_text()
+    assert 'href="a/"' in gallery_html
+    assert 'src="a/a.jpg"' in gallery_html
+
+
+def test_render_image_page_with_paired_markdown(tmp_path):
+    """Paired markdown provides title and content for image page."""
+    source = tmp_path / "source"
+    source.mkdir()
+    photos = source / "photos"
+    photos.mkdir()
+    (photos / "sunset.jpg").write_bytes(b"\xff\xd8\xff")
+    (photos / "sunset.md").write_text("# Golden Sunset\n\nTaken at the beach.")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "default.html").write_text("{{ page.title }}")
+    (theme / "gallery.html").write_text("gallery")
+    (theme / "image.html").write_text(
+        "<title>{{ page.title }}</title>{{ page.content }}"
+    )
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    Builder(config).render(root, str(source))
+
+    img_html = (public / "photos" / "sunset" / "index.html").read_text()
+    assert "<title>Golden Sunset</title>" in img_html
+    assert "Taken at the beach." in img_html
+
+
+def test_render_image_page_with_metadata(tmp_path):
+    """Image metadata is available in image page context."""
+    source = tmp_path / "source"
+    source.mkdir()
+    photos = source / "photos"
+    photos.mkdir()
+    (photos / "a.jpg").write_bytes(b"\xff\xd8\xff")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "default.html").write_text("{{ page.title }}")
+    (theme / "gallery.html").write_text("gallery")
+    (theme / "image.html").write_text("{{ page.image.camera }} {{ page.image.name }}")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    root.dirs[0].images[0]._metadata = {"camera": "Nikon Z6"}
+
+    Builder(config).render(root, str(source))
+
+    img_html = (public / "photos" / "a" / "index.html").read_text()
+    assert "Nikon Z6" in img_html
+    assert "a.jpg" in img_html
+
+
+def test_page_context_images_have_url_and_src(tmp_path):
+    """Parent nodes list images with url (page link) and src (file path)."""
+    config = Config()
+    r = Builder(config)
+    sub = tmp_path / "photos"
+    sub.mkdir()
+    node = Node(str(sub), type="GALLERY")
+    node.index_path = None
+
+    img = Node.__new__(Node)
+    img.type = "IMAGE"
+    img.name = "a.jpg"
+    img.stem = "a"
+    img.path = str(sub / "a.jpg")
+    img._metadata = None
+    node.images = [img]
+    node.pages = []
+    node.dirs = []
+
+    ctx = r._build_page_context(node)
+    assert ctx["images"][0]["url"] == "a/"
+    assert ctx["images"][0]["src"] == "a/a.jpg"
+
+
+def test_image_stem_directory_collision(tmp_path):
+    """sunset.jpg + sunset/ directory should collide on sunset/index.html."""
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "sunset.jpg").write_bytes(b"\xff\xd8\xff")
+    sunset_dir = source / "sunset"
+    sunset_dir.mkdir()
+    (sunset_dir / "page.md").write_text("# Sunset page")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "default.html").write_text("{{ page.title }}")
+    (theme / "directory.html").write_text("{{ page.title }}")
+    (theme / "image.html").write_text("{{ page.title }}")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+
+    with pytest.raises(RuntimeError, match="sunset/index.html"):
+        Builder(config).render(root, str(source))
 
 
 def test_render_public_defaults_to_public_dir(tmp_path):

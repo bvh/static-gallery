@@ -17,7 +17,7 @@
         <div class="gallery">
             {% for img in page.images %}
             <figure>
-                <a href="{{ img.url }}"><img src="{{ img.url }}" alt="{{ img.alt_text or img.name }}"></a>
+                <a href="{{ img.url }}"><img src="{{ img.src }}" alt="{{ img.alt_text or img.name }}"></a>
                 {% if img.title or img.description or img.camera or img.location or img.city or img.country %}
                 <figcaption>
                     {% if img.title %}

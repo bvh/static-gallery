@@ -17,49 +17,74 @@ class Scanner:
 
     def _scan_directory(self, parent):
         count = 0
+        # Phase 1: Collect and classify all entries
+        dirs = []
+        images = []
+        markdowns = []
+        statics = []
+
         with os.scandir(parent.path) as path:
             for entry in path:
                 # skip dotfiles
-                if not entry.name.startswith("."):
-                    # skip symlinks
-                    if not entry.is_symlink():
-                        # if name is index.md, it becomes the text source for the
-                        # container and is not treated as a separate node
-                        if entry.name.lower() == "index.md":
-                            parent.index_path = entry.path
-                            parent.mtime = entry.stat().st_mtime
-                            count += 1  # container is not empty
-                        # if this is THE site configuration file, load it into
-                        # the config object and do not treat it as a separate node
-                        elif (
-                            entry.name.lower().startswith("site.conf")
-                            and parent.type == NodeType.HOME
-                        ):
-                            if self.config and not self.config.config_path:
-                                self.config.load_file(entry.path)
-                        else:
-                            # create the child node, with unknown type
-                            child = Node(entry, parent=parent)
-                            if child.is_dir():
-                                # if the child is a directory, scan it
-                                if not self._scan_directory(child):
-                                    # if the directory is empty, skip it
-                                    continue
-                                # directories containing only images are galleries
-                                child.type = (
-                                    NodeType.GALLERY
-                                    if child.is_gallery()
-                                    else NodeType.DIRECTORY
-                                )
-                            # if not a directory, figure out what type it is
-                            elif child.is_markdown():
-                                child.type = NodeType.MARKDOWN
-                            elif child.is_image():
-                                child.type = NodeType.IMAGE
-                            else:
-                                # if not markdown or an image, must be static
-                                child.type = NodeType.STATIC
-                            # add the child
-                            parent.add_child(child)
-                            count += 1  # container is not empty
+                if entry.name.startswith("."):
+                    continue
+                # skip symlinks
+                if entry.is_symlink():
+                    continue
+                # if name is index.md, it becomes the text source for the
+                # container and is not treated as a separate node
+                if entry.name.lower() == "index.md":
+                    parent.index_path = entry.path
+                    parent.mtime = entry.stat().st_mtime
+                    count += 1  # container is not empty
+                    continue
+                # if this is THE site configuration file, load it into
+                # the config object and do not treat it as a separate node
+                if (
+                    entry.name.lower().startswith("site.conf")
+                    and parent.type == NodeType.HOME
+                ):
+                    if self.config and not self.config.config_path:
+                        self.config.load_file(entry.path)
+                    continue
+
+                child = Node(entry, parent=parent)
+                if child.is_dir():
+                    if not self._scan_directory(child):
+                        continue
+                    child.type = (
+                        NodeType.GALLERY if child.is_gallery() else NodeType.DIRECTORY
+                    )
+                    dirs.append(child)
+                elif child.is_image():
+                    child.type = NodeType.IMAGE
+                    images.append(child)
+                elif child.is_markdown():
+                    child.type = NodeType.MARKDOWN
+                    markdowns.append(child)
+                else:
+                    child.type = NodeType.STATIC
+                    statics.append(child)
+
+        # Phase 2: Pair markdown files with images by stem
+        image_stems = {img.stem: img for img in images}
+        for md in markdowns:
+            if md.stem in image_stems:
+                image_stems[md.stem].content_path = md.path
+            else:
+                parent.add_child(md)
+                count += 1
+
+        for img in images:
+            parent.add_child(img)
+            count += 1
+
+        for d in dirs:
+            parent.add_child(d)
+            count += 1
+
+        for asset in statics:
+            parent.add_child(asset)
+            count += 1
+
         return count

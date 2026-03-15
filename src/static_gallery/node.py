@@ -50,6 +50,9 @@ class Node:
         # Starts as None until the directory is scanned.
         self.index_path = None
 
+        # For IMAGE nodes, path to a paired markdown file (same stem).
+        self.content_path = None
+
         self.dirs = []
         self.pages = []
         self.images = []
@@ -60,6 +63,8 @@ class Node:
         path = None
         if self.type == NodeType.MARKDOWN:
             path = self.path
+        elif self.type == NodeType.IMAGE:
+            path = self.content_path
         elif self.type in (NodeType.DIRECTORY, NodeType.GALLERY, NodeType.HOME):
             path = self.index_path
         return path
@@ -94,6 +99,8 @@ class Node:
 
     @property
     def template_name(self):
+        if self.type == NodeType.IMAGE:
+            return "image.html"
         if self.type == NodeType.GALLERY:
             return "gallery.html"
         if self.type == NodeType.DIRECTORY and not self.index_path:
@@ -102,7 +109,9 @@ class Node:
 
     @property
     def title_fallback(self):
-        return self.stem if self.type == NodeType.MARKDOWN else self.name
+        if self.type in (NodeType.MARKDOWN, NodeType.IMAGE):
+            return self.stem
+        return self.name
 
     def is_image(self):
         suffixes = [".jpg", ".jpeg", ".webp", ".png", ".gif"]
@@ -131,6 +140,8 @@ class Node:
         data["mtime"] = self.mtime
         if self.index_path:
             data["index_path"] = self.index_path
+        if self.content_path:
+            data["content_path"] = self.content_path
         if self.parent:
             data["parent"] = self.parent.path
         if len(self.pages):

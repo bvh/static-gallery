@@ -44,6 +44,7 @@ class TestInit:
         assert node.type is None
         assert node.parent is None
         assert node.index_path is None
+        assert node.content_path is None
         assert node.dirs == []
         assert node.pages == []
         assert node.images == []
@@ -157,6 +158,12 @@ class TestTemplateName:
         node = Node(str(f), type=NodeType.MARKDOWN)
         assert node.template_name == "default.html"
 
+    def test_image(self, tmp_path):
+        f = tmp_path / "photo.jpg"
+        f.write_bytes(b"\x00")
+        node = Node(str(f), type=NodeType.IMAGE)
+        assert node.template_name == "image.html"
+
 
 class TestTitleFallback:
     def test_markdown_uses_stem(self, tmp_path):
@@ -164,6 +171,12 @@ class TestTitleFallback:
         f.write_text("# Hi")
         node = Node(str(f), type=NodeType.MARKDOWN)
         assert node.title_fallback == "my-page"
+
+    def test_image_uses_stem(self, tmp_path):
+        f = tmp_path / "sunset.jpg"
+        f.write_bytes(b"\x00")
+        node = Node(str(f), type=NodeType.IMAGE)
+        assert node.title_fallback == "sunset"
 
     def test_other_uses_name(self, tmp_path):
         node = Node(str(tmp_path), type=NodeType.DIRECTORY)
@@ -191,6 +204,36 @@ class TestIsGallery:
     def test_empty(self, tmp_path):
         node = Node(str(tmp_path))
         assert not node.is_gallery()
+
+
+class TestGetMarkdownPath:
+    def test_markdown_returns_own_path(self, tmp_path):
+        f = tmp_path / "page.md"
+        f.write_text("# Hi")
+        node = Node(str(f), type=NodeType.MARKDOWN)
+        assert node.get_markdown_path() == str(f)
+
+    def test_container_returns_index_path(self, tmp_path):
+        node = Node(str(tmp_path), type=NodeType.HOME)
+        node.index_path = "/some/index.md"
+        assert node.get_markdown_path() == "/some/index.md"
+
+    def test_container_returns_none_without_index(self, tmp_path):
+        node = Node(str(tmp_path), type=NodeType.DIRECTORY)
+        assert node.get_markdown_path() is None
+
+    def test_image_returns_content_path(self, tmp_path):
+        f = tmp_path / "photo.jpg"
+        f.write_bytes(b"\x00")
+        node = Node(str(f), type=NodeType.IMAGE)
+        node.content_path = "/some/photo.md"
+        assert node.get_markdown_path() == "/some/photo.md"
+
+    def test_image_returns_none_without_content_path(self, tmp_path):
+        f = tmp_path / "photo.jpg"
+        f.write_bytes(b"\x00")
+        node = Node(str(f), type=NodeType.IMAGE)
+        assert node.get_markdown_path() is None
 
 
 class TestMetadata:
@@ -251,6 +294,21 @@ class TestToDict:
         child = Node(str(f), parent=parent, type=NodeType.MARKDOWN)
         d = child.to_dict()
         assert d["parent"] == str(tmp_path)
+
+    def test_content_path_included(self, tmp_path):
+        f = tmp_path / "photo.jpg"
+        f.write_bytes(b"\x00")
+        node = Node(str(f), type=NodeType.IMAGE)
+        node.content_path = "/some/photo.md"
+        d = node.to_dict()
+        assert d["content_path"] == "/some/photo.md"
+
+    def test_content_path_omitted_when_none(self, tmp_path):
+        f = tmp_path / "photo.jpg"
+        f.write_bytes(b"\x00")
+        node = Node(str(f), type=NodeType.IMAGE)
+        d = node.to_dict()
+        assert "content_path" not in d
 
     def test_empty_children_omitted(self, tmp_path):
         node = Node(str(tmp_path), type=NodeType.HOME)

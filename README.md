@@ -66,8 +66,13 @@ site.url: https://example.com
 ### Image Metadata
 
 EXIF, IPTC, and XMP metadata is automatically extracted from image files and
-made available in templates. In gallery and directory templates, each image
-dict includes metadata fields alongside `name` and `url`:
+made available in templates. Each image gets its own page at a pretty URL
+(`photo/index.html`) with the image file co-located (`photo/photo.jpg`). If a
+markdown file shares the same stem as an image (e.g., `sunset.md` for
+`sunset.jpg`), it provides the title and content for that image's page instead
+of becoming a standalone page. In gallery and directory templates, each image
+dict includes metadata fields alongside `name`, `url` (link to image page),
+and `src` (path to image file):
 
 | Field | Description |
 |-------|-------------|
@@ -92,17 +97,23 @@ dict includes metadata fields alongside `name` and `url`:
 | `keywords` | List of keywords |
 | `rating` | Star rating |
 
-Example template usage:
+Example gallery template usage:
 ```html
 {% for img in page.images %}
   <figure>
-    <img src="{{ img.url }}" alt="{{ img.alt_text or img.name }}">
+    <a href="{{ img.url }}"><img src="{{ img.src }}" alt="{{ img.alt_text or img.name }}"></a>
     <figcaption>
       {{ img.title }}
       {% if img.camera %}Shot on {{ img.camera }}{% endif %}
     </figcaption>
   </figure>
 {% endfor %}
+```
+
+On individual image pages, the image is available as `page.image`:
+```html
+<img src="{{ page.image.url }}" alt="{{ page.image.alt_text or page.image.name }}">
+{{ page.content }}
 ```
 
 ## Development
