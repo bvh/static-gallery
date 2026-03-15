@@ -881,3 +881,177 @@ def test_render_public_defaults_to_public_dir(tmp_path):
         assert (tmp_path / "public" / "index.html").exists()
     finally:
         os.chdir(old_cwd)
+
+
+# --- shortcode integration ---
+
+
+def test_render_embed_image_shortcode(tmp_path):
+    """Embed shortcode in markdown renders as <img> in output HTML."""
+    source = tmp_path / "source"
+    source.mkdir()
+    photos = source / "photos"
+    photos.mkdir()
+    (photos / "sunset.jpg").write_bytes(b"\xff\xd8\xff")
+    (source / "index.md").write_text("# Home\n\n<</photos/sunset.jpg>>")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "default.html").write_text("{{ page.content }}")
+    (theme / "gallery.html").write_text("gallery")
+    (theme / "image.html").write_text("{{ page.title }}")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    Builder(config).render(root, str(source))
+
+    html = (public / "index.html").read_text()
+    assert "<img" in html
+    assert "sunset.jpg" in html
+
+
+def test_render_embed_code_shortcode(tmp_path):
+    """Embed shortcode for code file renders as <pre><code> in output."""
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "hello.py").write_text('print("hi")')
+    (source / "index.md").write_text("# Home\n\n<</hello.py>>")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "default.html").write_text("{{ page.content }}")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    Builder(config).render(root, str(source))
+
+    html = (public / "index.html").read_text()
+    assert '<pre><code class="language-py">' in html
+    assert "print" in html
+
+
+def test_render_gallery_shortcode(tmp_path):
+    """Gallery shortcode in index.md renders gallery HTML."""
+    source = tmp_path / "source"
+    source.mkdir()
+    photos = source / "photos"
+    photos.mkdir()
+    (photos / "a.jpg").write_bytes(b"\xff\xd8\xff")
+    (photos / "index.md").write_text("# Photos\n\n<<gallery>>")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    root.dirs[0].images[0]._metadata = {}
+    Builder(config).render(root, str(source))
+
+    html = (public / "photos" / "index.html").read_text()
+    assert '<div class="gallery">' in html
+    assert "a/a.jpg" in html
+
+
+def test_render_link_embed_static_file(tmp_path):
+    """Link embed of a static file produces correct <a href> URL."""
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "data.csv").write_text("a,b,c")
+    (source / "index.md").write_text("# Home\n\n<</data.csv>>")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "default.html").write_text("{{ page.content }}")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    Builder(config).render(root, str(source))
+
+    html = (public / "index.html").read_text()
+    assert '<a href="data.csv">' in html
+
+
+def test_render_cross_directory_embed(tmp_path):
+    """Shortcode in blog/post.md referencing photos/sunset.jpg produces correct relative path."""
+    source = tmp_path / "source"
+    source.mkdir()
+    blog = source / "blog"
+    blog.mkdir()
+    (blog / "post.md").write_text("# Post\n\n<</photos/sunset.jpg>>")
+    photos = source / "photos"
+    photos.mkdir()
+    (photos / "sunset.jpg").write_bytes(b"\xff\xd8\xff")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "default.html").write_text("{{ page.content }}")
+    (theme / "directory.html").write_text("{{ page.title }}")
+    (theme / "gallery.html").write_text("gallery")
+    (theme / "image.html").write_text("{{ page.title }}")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    Builder(config).render(root, str(source))
+
+    html = (public / "blog" / "post" / "index.html").read_text()
+    assert "<img" in html
+    # Should be a relative path from blog/post/ to photos/sunset/sunset.jpg
+    assert "photos/sunset/sunset.jpg" in html
+
+
+def test_render_shortcodes_in_paired_markdown(tmp_path):
+    """IMAGE node with content_path containing shortcodes renders them."""
+    source = tmp_path / "source"
+    source.mkdir()
+    photos = source / "photos"
+    photos.mkdir()
+    (photos / "sunset.jpg").write_bytes(b"\xff\xd8\xff")
+    (photos / "sunset.md").write_text("# Sunset\n\n<</photos/sunset.jpg>>")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "default.html").write_text("{{ page.title }}")
+    (theme / "gallery.html").write_text("gallery")
+    (theme / "image.html").write_text(
+        "<title>{{ page.title }}</title>{{ page.content }}"
+    )
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    root.dirs[0].images[0]._metadata = {}
+    Builder(config).render(root, str(source))
+
+    html = (public / "photos" / "sunset" / "index.html").read_text()
+    assert "<title>Sunset</title>" in html
+    assert "<img" in html
+    assert "sunset.jpg" in html
+
+
+def test_render_no_shortcodes_unchanged(tmp_path):
+    """Markdown without shortcodes renders normally."""
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "index.md").write_text("# Hello\n\nNo shortcodes here.")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "default.html").write_text("{{ page.content }}")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    root = Scanner(config).scan(str(source))
+    Builder(config).render(root, str(source))
+
+    html = (public / "index.html").read_text()
+    assert "No shortcodes here." in html
+    assert "<<" not in html

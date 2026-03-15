@@ -8,7 +8,8 @@ from jinja2 import Environment, FileSystemLoader, PackageLoader
 from markupsafe import Markup
 
 from static_gallery.markdown import MarkdownRenderer
-from static_gallery.node import NodeType
+from static_gallery.node import NodeType, build_image_data
+from static_gallery.shortcodes import ShortcodeProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class Builder:
             autoescape=True,
         )
         self._md = MarkdownRenderer()
+        self._shortcodes = None
         meta = importlib.metadata.metadata("static-gallery")
         package = meta["Name"]
         self._generator = {
@@ -45,6 +47,9 @@ class Builder:
         path_map = {}
         self._collect_output_paths(root_node, path_map)
         self._check_collisions(path_map)
+        self._shortcodes = ShortcodeProcessor(
+            root_node, self._source_path, self.env, self._resolve_url
+        )
         os.makedirs(self._public_path, exist_ok=True)
         logger.info("Rendering site to %s", self._public_path)
         self._render_node(root_node)
@@ -144,13 +149,30 @@ class Builder:
         stem = os.path.splitext(rel)[0]
         return os.path.join(stem, node.name)
 
+    def _resolve_url(self, current_node, target_node, image_file=False):
+        current_output = self._get_output_path(current_node, self._source_path)
+        current_dir = os.path.dirname(current_output)
+        if image_file and target_node.type == NodeType.IMAGE:
+            target_output = self._get_image_file_output_path(
+                target_node, self._source_path
+            )
+        elif target_node.type == NodeType.STATIC:
+            target_output = os.path.relpath(target_node.path, self._source_path)
+        else:
+            target_output = self._get_output_path(target_node, self._source_path)
+        return os.path.relpath(target_output, current_dir)
+
     def _build_page_context(self, node):
         md_path = node.get_markdown_path()
         title = None
         content = ""
 
         if md_path and os.path.exists(md_path):
-            result = self._md.render_file(md_path, remove_title=True)
+            with open(md_path) as f:
+                text = f.read()
+            if self._shortcodes:
+                text = self._shortcodes.process(text, node)
+            result = self._md.render(text, remove_title=True)
             title = result.title
             content = Markup(result.html)
 
@@ -170,14 +192,7 @@ class Builder:
             ctx["image"] = image_data
         else:
             # Build image list with links to image pages
-            images = []
-            for img in node.images:
-                image_data = dict(img.metadata)
-                image_data["name"] = img.name
-                image_data["url"] = img.stem + "/"
-                image_data["src"] = img.stem + "/" + img.name
-                images.append(image_data)
-            ctx["images"] = images
+            ctx["images"] = [build_image_data(img) for img in node.images]
 
         # Build page list
         pages = []

@@ -116,6 +116,32 @@ On individual image pages, the image is available as `page.image`:
 {{ page.content }}
 ```
 
+### Shortcodes
+
+Shortcodes are special tags in markdown content that expand into HTML during
+rendering. They use `<<…>>` syntax.
+
+**Embed shortcodes** reference files by their source-relative path (starting
+with `/`):
+
+| Syntax | Result |
+|--------|--------|
+| `<</photos/sunset.jpg>>` | `<img>` tag linking to the image file |
+| `<</src/app.py>>` | `<pre><code>` block with the file contents (for known code extensions) |
+| `<</files/data.csv>>` | `<a>` link to the file |
+
+**Named shortcodes** invoke built-in functions:
+
+| Syntax | Result |
+|--------|--------|
+| `<<gallery>>` | Renders the current node's images using the `codes/gallery.html` template |
+| `<<gallery sort=datetime>>` | Sorts images by a metadata field |
+| `<<gallery sort=datetime reverse>>` | Sorts in reverse order |
+| `<<gallery filter="*.jpg">>` | Filters images by filename glob pattern |
+
+Custom themes can override the gallery shortcode template by providing a
+`codes/gallery.html` file in the theme directory.
+
 ## Development
 
 ### Tests

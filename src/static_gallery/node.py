@@ -156,3 +156,11 @@ class Node:
 
     def __str__(self):
         return json.dumps(self.to_dict(), indent=4)
+
+
+def build_image_data(img):
+    data = dict(img.metadata)
+    data["name"] = img.name
+    data["url"] = img.stem + "/"
+    data["src"] = img.stem + "/" + img.name
+    return data
