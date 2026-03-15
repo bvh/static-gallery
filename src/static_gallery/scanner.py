@@ -1,6 +1,6 @@
 import os
 
-from static_gallery.nodes import Node
+from static_gallery.node import Node
 
 
 class Scanner:

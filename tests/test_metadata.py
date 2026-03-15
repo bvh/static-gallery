@@ -4,7 +4,7 @@ import pyexiv2
 import pytest
 
 from static_gallery.metadata import read_metadata
-from static_gallery.nodes import Node
+from static_gallery.node import Node
 
 # Minimal valid JPEG (SOI + APP0 + EOI)
 MINIMAL_JPEG = bytes(

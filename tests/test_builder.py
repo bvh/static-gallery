@@ -1,7 +1,7 @@
 import os
 
 from static_gallery.config import Config
-from static_gallery.nodes import Node
+from static_gallery.node import Node
 from static_gallery.builder import Builder
 from static_gallery.scanner import Scanner
 
