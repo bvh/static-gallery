@@ -11,3 +11,10 @@ wheels/
 
 # gallery generated files
 public/
+
+# Generated example images (source: images/*.svg, script: images/generate.sh)
+example/**/*.jpg
+example/**/*.jpeg
+example/**/*.png
+example/**/*.gif
+example/**/*.webp

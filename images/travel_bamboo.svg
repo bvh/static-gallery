@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--METADATA
+-IPTC:ObjectName=Arashiyama bamboo grove
+-EXIF:ImageDescription=Towering bamboo stalks line a narrow path through Arashiyama grove
+-EXIF:Artist=Jane Doe
+-EXIF:Copyright=2024 Jane Doe
+-EXIF:DateTimeOriginal=2024:10:24 10:00:00
+-EXIF:Make=Canon
+-EXIF:Model=EOS R5
+-EXIF:LensModel=RF 15-35mm F2.8L IS USM
+-EXIF:LensMake=Canon
+-EXIF:ExposureTime=1/60
+-EXIF:FNumber=4/1
+-EXIF:ISO=800
+-EXIF:FocalLength=15/1
+-EXIF:FocalLengthIn35mmFormat=15
+-EXIF:GPSLatitude=35/1 1/1 4/1
+-EXIF:GPSLatitudeRef=N
+-EXIF:GPSLongitude=135/1 40/1 18/1
+-EXIF:GPSLongitudeRef=E
+-IPTC:Country-PrimaryLocationCode=JP
+-IPTC:Country-PrimaryLocationName=Japan
+-IPTC:City=Kyoto
+-IPTC:Sub-location=Arashiyama
+-IPTC:Keywords=bamboo
+-IPTC:Keywords=grove
+-IPTC:Keywords=path
+-IPTC:Keywords=kyoto
+-IPTC:Keywords=japan
+-XMP:Rating=5
+METADATA-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1920" viewBox="0 0 1280 1920">
+  <rect width="1280" height="1920" fill="#3a5a2a"/>
+  <!-- Sky glimpse at top -->
+  <rect x="400" y="0" width="480" height="200" fill="#87ceeb" opacity="0.3"/>
+  <!-- Bamboo stalks - left side -->
+  <line x1="80" y1="0" x2="80" y2="1920" stroke="#5a8a3a" stroke-width="20"/>
+  <line x1="160" y1="0" x2="160" y2="1920" stroke="#4a7a2a" stroke-width="18"/>
+  <line x1="250" y1="0" x2="250" y2="1920" stroke="#5a8a3a" stroke-width="22"/>
+  <line x1="330" y1="0" x2="330" y2="1920" stroke="#4a7a2a" stroke-width="16"/>
+  <line x1="400" y1="0" x2="400" y2="1920" stroke="#6a9a4a" stroke-width="20"/>
+  <!-- Bamboo stalks - right side -->
+  <line x1="880" y1="0" x2="880" y2="1920" stroke="#6a9a4a" stroke-width="20"/>
+  <line x1="950" y1="0" x2="950" y2="1920" stroke="#4a7a2a" stroke-width="16"/>
+  <line x1="1030" y1="0" x2="1030" y2="1920" stroke="#5a8a3a" stroke-width="22"/>
+  <line x1="1120" y1="0" x2="1120" y2="1920" stroke="#4a7a2a" stroke-width="18"/>
+  <line x1="1200" y1="0" x2="1200" y2="1920" stroke="#5a8a3a" stroke-width="20"/>
+  <!-- Bamboo nodes (horizontal lines on stalks) -->
+  <line x1="70" y1="300" x2="90" y2="300" stroke="#3a6a1a" stroke-width="3"/>
+  <line x1="70" y1="600" x2="90" y2="600" stroke="#3a6a1a" stroke-width="3"/>
+  <line x1="70" y1="900" x2="90" y2="900" stroke="#3a6a1a" stroke-width="3"/>
+  <line x1="150" y1="200" x2="170" y2="200" stroke="#3a6a1a" stroke-width="3"/>
+  <line x1="150" y1="500" x2="170" y2="500" stroke="#3a6a1a" stroke-width="3"/>
+  <line x1="150" y1="800" x2="170" y2="800" stroke="#3a6a1a" stroke-width="3"/>
+  <line x1="240" y1="350" x2="260" y2="350" stroke="#3a6a1a" stroke-width="3"/>
+  <line x1="240" y1="700" x2="260" y2="700" stroke="#3a6a1a" stroke-width="3"/>
+  <line x1="240" y1="1050" x2="260" y2="1050" stroke="#3a6a1a" stroke-width="3"/>
+  <line x1="1020" y1="250" x2="1040" y2="250" stroke="#3a6a1a" stroke-width="3"/>
+  <line x1="1020" y1="600" x2="1040" y2="600" stroke="#3a6a1a" stroke-width="3"/>
+  <line x1="1020" y1="950" x2="1040" y2="950" stroke="#3a6a1a" stroke-width="3"/>
+  <line x1="1110" y1="400" x2="1130" y2="400" stroke="#3a6a1a" stroke-width="3"/>
+  <line x1="1110" y1="750" x2="1130" y2="750" stroke="#3a6a1a" stroke-width="3"/>
+  <line x1="1110" y1="1100" x2="1130" y2="1100" stroke="#3a6a1a" stroke-width="3"/>
+  <!-- Bamboo leaves (small diagonal lines) -->
+  <line x1="80" y1="300" x2="40" y2="270" stroke="#4a8a2a" stroke-width="3"/>
+  <line x1="80" y1="300" x2="50" y2="320" stroke="#4a8a2a" stroke-width="3"/>
+  <line x1="250" y1="350" x2="210" y2="320" stroke="#4a8a2a" stroke-width="3"/>
+  <line x1="250" y1="350" x2="220" y2="380" stroke="#4a8a2a" stroke-width="3"/>
+  <line x1="1030" y1="250" x2="1070" y2="220" stroke="#4a8a2a" stroke-width="3"/>
+  <line x1="1030" y1="250" x2="1060" y2="280" stroke="#4a8a2a" stroke-width="3"/>
+  <line x1="1120" y1="400" x2="1160" y2="370" stroke="#4a8a2a" stroke-width="3"/>
+  <line x1="1120" y1="400" x2="1150" y2="430" stroke="#4a8a2a" stroke-width="3"/>
+  <!-- Path (ground level) -->
+  <rect x="430" y="1400" width="420" height="520" fill="#8a7a5a"/>
+  <path d="M430,1400 Q640,1300 850,1400" fill="#8a7a5a"/>
+  <!-- Path perspective narrowing upward -->
+  <path d="M430,1400 L550,600 L730,600 L850,1400 Z" fill="#8a7a5a" opacity="0.6"/>
+  <!-- Fence along path -->
+  <line x1="430" y1="1400" x2="550" y2="700" stroke="#6a5a3a" stroke-width="4"/>
+  <line x1="850" y1="1400" x2="730" y2="700" stroke="#6a5a3a" stroke-width="4"/>
+</svg>

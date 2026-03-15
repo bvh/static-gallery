@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--METADATA
+-IPTC:ObjectName=Fushimi Inari shrine gate
+-EXIF:ImageDescription=Vermillion torii gate at Fushimi Inari shrine with stone path
+-EXIF:Artist=Jane Doe
+-EXIF:Copyright=2024 Jane Doe
+-EXIF:DateTimeOriginal=2024:10:22 09:15:00
+-EXIF:Make=Nikon
+-EXIF:Model=Z 8
+-EXIF:LensModel=NIKKOR Z 24-120mm f/4 S
+-EXIF:LensMake=Nikon
+-EXIF:ExposureTime=1/500
+-EXIF:FNumber=56/10
+-EXIF:ISO=200
+-EXIF:FocalLength=28/1
+-EXIF:FocalLengthIn35mmFormat=28
+-EXIF:GPSLatitude=34/1 58/1 2/1
+-EXIF:GPSLatitudeRef=N
+-EXIF:GPSLongitude=135/1 46/1 21/1
+-EXIF:GPSLongitudeRef=E
+-IPTC:Country-PrimaryLocationCode=JP
+-IPTC:Country-PrimaryLocationName=Japan
+-IPTC:City=Kyoto
+-XMP:Subject=temple
+-XMP:Subject=torii
+-XMP:Subject=shrine
+-XMP:Subject=kyoto
+-XMP:Subject=japan
+-XMP:Rating=5
+METADATA-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1280" viewBox="0 0 1920 1280">
+  <rect width="1920" height="1280" fill="#2a4a2a"/>
+  <!-- Dense forest background -->
+  <circle cx="200" cy="300" r="180" fill="#1a3a1a"/>
+  <circle cx="500" cy="250" r="200" fill="#1a3a1a"/>
+  <circle cx="800" cy="200" r="220" fill="#1a3a1a"/>
+  <circle cx="1100" cy="250" r="200" fill="#1a3a1a"/>
+  <circle cx="1400" cy="280" r="190" fill="#1a3a1a"/>
+  <circle cx="1700" cy="300" r="180" fill="#1a3a1a"/>
+  <circle cx="350" cy="450" r="160" fill="#254525"/>
+  <circle cx="1550" cy="450" r="160" fill="#254525"/>
+  <!-- Stone path -->
+  <path d="M700,1280 L750,600 L1170,600 L1220,1280 Z" fill="#8a8a7a"/>
+  <line x1="750" y1="700" x2="1170" y2="700" stroke="#7a7a6a" stroke-width="2"/>
+  <line x1="740" y1="850" x2="1180" y2="850" stroke="#7a7a6a" stroke-width="2"/>
+  <line x1="730" y1="1000" x2="1190" y2="1000" stroke="#7a7a6a" stroke-width="2"/>
+  <line x1="720" y1="1150" x2="1200" y2="1150" stroke="#7a7a6a" stroke-width="2"/>
+  <!-- Torii gate -->
+  <!-- Vertical pillars -->
+  <rect x="780" y="300" width="40" height="700" fill="#c83030" stroke="#a02020" stroke-width="2"/>
+  <rect x="1100" y="300" width="40" height="700" fill="#c83030" stroke="#a02020" stroke-width="2"/>
+  <!-- Top beam (kasagi) -->
+  <rect x="740" y="280" width="440" height="30" fill="#c83030" stroke="#a02020" stroke-width="2"/>
+  <path d="M730,280 L960,260 L1190,280" fill="none" stroke="#c83030" stroke-width="8"/>
+  <!-- Secondary beam (nuki) -->
+  <rect x="770" y="380" width="380" height="20" fill="#c83030" stroke="#a02020" stroke-width="2"/>
+  <!-- Stone lanterns flanking path -->
+  <rect x="650" y="850" width="30" height="60" fill="#888" stroke="#666" stroke-width="2"/>
+  <rect x="640" y="830" width="50" height="25" fill="#999" stroke="#666" stroke-width="2"/>
+  <polygon points="645,830 665,790 685,830" fill="#999" stroke="#666" stroke-width="2"/>
+  <rect x="1240" y="850" width="30" height="60" fill="#888" stroke="#666" stroke-width="2"/>
+  <rect x="1230" y="830" width="50" height="25" fill="#999" stroke="#666" stroke-width="2"/>
+  <polygon points="1235,830 1255,790 1275,830" fill="#999" stroke="#666" stroke-width="2"/>
+  <!-- Ground vegetation -->
+  <rect x="0" y="1000" width="700" height="280" fill="#2a5a2a"/>
+  <rect x="1220" y="1000" width="700" height="280" fill="#2a5a2a"/>
+</svg>

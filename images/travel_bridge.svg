@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--METADATA
+-IPTC:ObjectName=Tower Bridge at dusk
+-EXIF:ImageDescription=Tower Bridge spanning the Thames with lights reflecting on the water
+-EXIF:Artist=Jane Doe
+-EXIF:Copyright=2024 Jane Doe
+-EXIF:DateTimeOriginal=2024:09:11 20:15:00
+-EXIF:Make=Canon
+-EXIF:Model=EOS R5
+-EXIF:LensModel=RF 15-35mm F2.8L IS USM
+-EXIF:LensMake=Canon
+-EXIF:ExposureTime=1/30
+-EXIF:FNumber=4/1
+-EXIF:ISO=800
+-EXIF:FocalLength=24/1
+-EXIF:FocalLengthIn35mmFormat=24
+-EXIF:GPSLatitude=51/1 30/1 20/1
+-EXIF:GPSLatitudeRef=N
+-EXIF:GPSLongitude=0/1 4/1 31/1
+-EXIF:GPSLongitudeRef=W
+-IPTC:Country-PrimaryLocationCode=GB
+-IPTC:Country-PrimaryLocationName=United Kingdom
+-IPTC:Province-State=England
+-IPTC:City=London
+-IPTC:Sub-location=Tower Bridge
+-IPTC:Keywords=bridge
+-IPTC:Keywords=thames
+-IPTC:Keywords=london
+-IPTC:Keywords=dusk
+-IPTC:Keywords=landmark
+-XMP:Rating=4
+METADATA-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1280" viewBox="0 0 1920 1280">
+  <rect width="1920" height="1280" fill="#2a3a5a"/>
+  <!-- Sky -->
+  <rect x="0" y="0" width="1920" height="500" fill="#3a4a6a"/>
+  <!-- River -->
+  <rect x="0" y="750" width="1920" height="530" fill="#1a2a4a"/>
+  <!-- Left tower -->
+  <rect x="500" y="200" width="120" height="550" fill="#8a7a60" stroke="#6a5a40" stroke-width="3"/>
+  <rect x="490" y="350" width="140" height="40" fill="#9a8a70" stroke="#6a5a40" stroke-width="2"/>
+  <polygon points="500,200 560,120 620,200" fill="#8a7a60" stroke="#6a5a40" stroke-width="3"/>
+  <!-- Right tower -->
+  <rect x="1300" y="200" width="120" height="550" fill="#8a7a60" stroke="#6a5a40" stroke-width="3"/>
+  <rect x="1290" y="350" width="140" height="40" fill="#9a8a70" stroke="#6a5a40" stroke-width="2"/>
+  <polygon points="1300,200 1360,120 1420,200" fill="#8a7a60" stroke="#6a5a40" stroke-width="3"/>
+  <!-- Upper walkway -->
+  <rect x="620" y="280" width="680" height="30" fill="#8a7a60" stroke="#6a5a40" stroke-width="2"/>
+  <rect x="620" y="320" width="680" height="30" fill="#8a7a60" stroke="#6a5a40" stroke-width="2"/>
+  <!-- Vertical supports on walkway -->
+  <line x1="700" y1="280" x2="700" y2="350" stroke="#6a5a40" stroke-width="3"/>
+  <line x1="800" y1="280" x2="800" y2="350" stroke="#6a5a40" stroke-width="3"/>
+  <line x1="900" y1="280" x2="900" y2="350" stroke="#6a5a40" stroke-width="3"/>
+  <line x1="1000" y1="280" x2="1000" y2="350" stroke="#6a5a40" stroke-width="3"/>
+  <line x1="1100" y1="280" x2="1100" y2="350" stroke="#6a5a40" stroke-width="3"/>
+  <line x1="1200" y1="280" x2="1200" y2="350" stroke="#6a5a40" stroke-width="3"/>
+  <!-- Road deck -->
+  <rect x="0" y="650" width="1920" height="100" fill="#6a6a6a" stroke="#4a4a4a" stroke-width="2"/>
+  <!-- Suspension cables left -->
+  <path d="M560,150 Q400,550 200,700" fill="none" stroke="#6a5a40" stroke-width="4"/>
+  <path d="M560,150 Q300,500 50,700" fill="none" stroke="#6a5a40" stroke-width="4"/>
+  <!-- Suspension cables right -->
+  <path d="M1360,150 Q1520,550 1720,700" fill="none" stroke="#6a5a40" stroke-width="4"/>
+  <path d="M1360,150 Q1620,500 1870,700" fill="none" stroke="#6a5a40" stroke-width="4"/>
+  <!-- Reflections on water -->
+  <line x1="540" y1="800" x2="580" y2="1200" stroke="#9a8a60" stroke-width="6" opacity="0.2"/>
+  <line x1="1340" y1="800" x2="1380" y2="1200" stroke="#9a8a60" stroke-width="6" opacity="0.2"/>
+</svg>

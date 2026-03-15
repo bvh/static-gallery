@@ -41,6 +41,12 @@ uv run pre-commit run --all-files  # Run ruff linting and formatting checks
 - Dev dependencies: pytest, pre-commit
 - Pre-commit hooks: ruff-check and ruff-format (astral-sh/ruff-pre-commit)
 
+## Example Images
+
+SVG sources live in `images/`. Run `images/generate.sh` to generate raster images
+for the `example/` directory. Requires `rsvg-convert` (librsvg), ImageMagick (`magick`),
+and `exiftool`. Install with: `brew install librsvg imagemagick exiftool`.
+
 ## Development Practices
 
 - Prefer red/green TDD: write failing tests first, then implement to make them pass.

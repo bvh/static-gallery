@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--METADATA
+-IPTC:Caption-Abstract=The Palace of Westminster and Elizabeth Tower seen from across the Thames at golden hour
+-EXIF:Artist=Jane Doe
+-EXIF:Copyright=2024 Jane Doe
+-EXIF:DateTimeOriginal=2024:09:10 18:45:00
+-EXIF:Make=Nikon
+-EXIF:Model=Z 8
+-EXIF:LensModel=NIKKOR Z 24-120mm f/4 S
+-EXIF:LensMake=Nikon
+-EXIF:ExposureTime=1/250
+-EXIF:FNumber=8/1
+-EXIF:ISO=100
+-EXIF:FocalLength=40/1
+-EXIF:FocalLengthIn35mmFormat=40
+-EXIF:GPSLatitude=51/1 30/1 3/1
+-EXIF:GPSLatitudeRef=N
+-EXIF:GPSLongitude=0/1 7/1 15/1
+-EXIF:GPSLongitudeRef=W
+-IPTC:Country-PrimaryLocationCode=GB
+-IPTC:Country-PrimaryLocationName=United Kingdom
+-IPTC:Province-State=England
+-IPTC:City=London
+-IPTC:Sub-location=Westminster
+-IPTC:Keywords=palace
+-IPTC:Keywords=parliament
+-IPTC:Keywords=london
+-IPTC:Keywords=thames
+-IPTC:Keywords=landmark
+-XMP:Rating=5
+METADATA-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1280" viewBox="0 0 1920 1280">
+  <rect width="1920" height="1280" fill="#d4a060"/>
+  <!-- Sky gradient approximation -->
+  <rect x="0" y="0" width="1920" height="400" fill="#e8a040" opacity="0.6"/>
+  <!-- River -->
+  <rect x="0" y="800" width="1920" height="480" fill="#4a6a8a"/>
+  <line x1="0" y1="900" x2="1920" y2="910" stroke="#5a7a9a" stroke-width="2" opacity="0.3"/>
+  <line x1="0" y1="1000" x2="1920" y2="990" stroke="#5a7a9a" stroke-width="2" opacity="0.3"/>
+  <!-- Palace main body -->
+  <rect x="200" y="350" width="1200" height="450" fill="#c8b898" stroke="#a09070" stroke-width="3"/>
+  <!-- Windows row 1 -->
+  <rect x="250" y="400" width="30" height="60" fill="#6a5a40" stroke="#a09070" stroke-width="1"/>
+  <rect x="320" y="400" width="30" height="60" fill="#6a5a40" stroke="#a09070" stroke-width="1"/>
+  <rect x="390" y="400" width="30" height="60" fill="#6a5a40" stroke="#a09070" stroke-width="1"/>
+  <rect x="460" y="400" width="30" height="60" fill="#6a5a40" stroke="#a09070" stroke-width="1"/>
+  <rect x="530" y="400" width="30" height="60" fill="#6a5a40" stroke="#a09070" stroke-width="1"/>
+  <rect x="600" y="400" width="30" height="60" fill="#6a5a40" stroke="#a09070" stroke-width="1"/>
+  <rect x="670" y="400" width="30" height="60" fill="#6a5a40" stroke="#a09070" stroke-width="1"/>
+  <!-- Windows row 2 -->
+  <rect x="250" y="520" width="30" height="60" fill="#6a5a40" stroke="#a09070" stroke-width="1"/>
+  <rect x="320" y="520" width="30" height="60" fill="#6a5a40" stroke="#a09070" stroke-width="1"/>
+  <rect x="390" y="520" width="30" height="60" fill="#6a5a40" stroke="#a09070" stroke-width="1"/>
+  <rect x="460" y="520" width="30" height="60" fill="#6a5a40" stroke="#a09070" stroke-width="1"/>
+  <rect x="530" y="520" width="30" height="60" fill="#6a5a40" stroke="#a09070" stroke-width="1"/>
+  <rect x="600" y="520" width="30" height="60" fill="#6a5a40" stroke="#a09070" stroke-width="1"/>
+  <rect x="670" y="520" width="30" height="60" fill="#6a5a40" stroke="#a09070" stroke-width="1"/>
+  <!-- Elizabeth Tower (Big Ben) -->
+  <rect x="1380" y="150" width="100" height="650" fill="#c8b898" stroke="#a09070" stroke-width="3"/>
+  <polygon points="1380,150 1430,50 1480,150" fill="#c8b898" stroke="#a09070" stroke-width="3"/>
+  <!-- Clock face -->
+  <circle cx="1430" cy="280" r="40" fill="#e8e0d0" stroke="#a09070" stroke-width="3"/>
+  <line x1="1430" y1="280" x2="1430" y2="250" stroke="#333" stroke-width="3"/>
+  <line x1="1430" y1="280" x2="1450" y2="270" stroke="#333" stroke-width="2"/>
+  <!-- Spire -->
+  <line x1="1430" y1="50" x2="1430" y2="10" stroke="#a09070" stroke-width="4"/>
+  <!-- Victoria Tower -->
+  <rect x="200" y="250" width="120" height="550" fill="#c8b898" stroke="#a09070" stroke-width="3"/>
+  <rect x="210" y="260" width="100" height="30" fill="#a09070"/>
+  <!-- Embankment wall -->
+  <rect x="0" y="780" width="1920" height="20" fill="#8a7a60"/>
+</svg>

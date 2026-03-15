@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1280" viewBox="0 0 1920 1280">
+  <rect width="1920" height="1280" fill="#3a3028"/>
+  <!-- Table surface -->
+  <rect x="0" y="500" width="1920" height="780" fill="#5c4033"/>
+  <line x1="0" y1="500" x2="1920" y2="500" stroke="#4a3020" stroke-width="3"/>
+  <!-- Wood grain lines -->
+  <line x1="0" y1="650" x2="1920" y2="660" stroke="#4a3020" stroke-width="1" opacity="0.3"/>
+  <line x1="0" y1="820" x2="1920" y2="810" stroke="#4a3020" stroke-width="1" opacity="0.3"/>
+  <line x1="0" y1="1000" x2="1920" y2="1010" stroke="#4a3020" stroke-width="1" opacity="0.3"/>
+  <!-- Saucer -->
+  <ellipse cx="960" cy="850" rx="200" ry="40" fill="#e8e0d8" stroke="#c8c0b0" stroke-width="3"/>
+  <!-- Cup -->
+  <path d="M840,650 L860,850 L1060,850 L1080,650 Z" fill="#e8e0d8" stroke="#c8c0b0" stroke-width="3"/>
+  <ellipse cx="960" cy="650" rx="120" ry="25" fill="#d4c8b8" stroke="#c8c0b0" stroke-width="3"/>
+  <!-- Coffee surface -->
+  <ellipse cx="960" cy="660" rx="110" ry="20" fill="#3a2010"/>
+  <!-- Handle -->
+  <path d="M1080,700 Q1180,700 1180,775 Q1180,840 1080,840" fill="none" stroke="#c8c0b0" stroke-width="8"/>
+  <!-- Steam -->
+  <path d="M920,620 Q910,560 930,500 Q940,460 920,400" fill="none" stroke="#ddd" stroke-width="3" opacity="0.4"/>
+  <path d="M960,610 Q950,545 970,480 Q980,430 960,370" fill="none" stroke="#ddd" stroke-width="3" opacity="0.35"/>
+  <path d="M1000,620 Q990,560 1010,500 Q1020,460 1000,400" fill="none" stroke="#ddd" stroke-width="3" opacity="0.3"/>
+</svg>

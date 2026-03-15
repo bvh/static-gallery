@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--METADATA
+-IPTC:ObjectName=Tall fiddle-leaf fig in living room
+-EXIF:Artist=Jane Doe
+-EXIF:Copyright=2024 Jane Doe
+-EXIF:DateTimeOriginal=2024:06:15 10:15:00
+-EXIF:Make=Sony
+-EXIF:Model=ILCE-7M4
+-EXIF:GPSLatitude=47/1 36/1 22/1
+-EXIF:GPSLatitudeRef=N
+-EXIF:GPSLongitude=122/1 19/1 55/1
+-EXIF:GPSLongitudeRef=W
+-IPTC:Country-PrimaryLocationCode=US
+-IPTC:Country-PrimaryLocationName=United States
+-IPTC:Province-State=Washington
+-IPTC:City=Seattle
+-IPTC:Keywords=plant
+-IPTC:Keywords=indoor
+-IPTC:Keywords=home
+-IPTC:Keywords=living room
+-XMP:Rating=3
+METADATA-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1920" viewBox="0 0 1280 1920">
+  <rect width="1280" height="1920" fill="#f0ebe3"/>
+  <!-- Floor -->
+  <rect x="0" y="1600" width="1280" height="320" fill="#c8a882"/>
+  <line x1="0" y1="1600" x2="1280" y2="1600" stroke="#a08060" stroke-width="2"/>
+  <!-- Pot -->
+  <path d="M520,1600 L560,1350 L720,1350 L760,1600 Z" fill="#c0613a" stroke="#8b3a1a" stroke-width="4"/>
+  <ellipse cx="640" cy="1350" rx="80" ry="15" fill="#d07040" stroke="#8b3a1a" stroke-width="3"/>
+  <!-- Trunk -->
+  <path d="M640,1350 Q630,1100 650,800" fill="none" stroke="#5a3a1a" stroke-width="12"/>
+  <!-- Large fiddle-leaf fig leaves -->
+  <ellipse cx="580" cy="750" rx="70" ry="100" fill="#3a7a3a" stroke="#2a5a2a" stroke-width="2" transform="rotate(-20 580 750)"/>
+  <ellipse cx="720" cy="700" rx="65" ry="95" fill="#4a8a4a" stroke="#2a5a2a" stroke-width="2" transform="rotate(15 720 700)"/>
+  <ellipse cx="620" cy="580" rx="60" ry="90" fill="#3a7a3a" stroke="#2a5a2a" stroke-width="2" transform="rotate(-10 620 580)"/>
+  <ellipse cx="700" cy="520" rx="55" ry="85" fill="#5a9a5a" stroke="#2a5a2a" stroke-width="2" transform="rotate(25 700 520)"/>
+  <ellipse cx="640" cy="400" rx="50" ry="80" fill="#4a8a4a" stroke="#2a5a2a" stroke-width="2" transform="rotate(-5 640 400)"/>
+  <ellipse cx="570" cy="900" rx="60" ry="85" fill="#4a8a4a" stroke="#2a5a2a" stroke-width="2" transform="rotate(-30 570 900)"/>
+  <ellipse cx="730" cy="880" rx="55" ry="80" fill="#3a7a3a" stroke="#2a5a2a" stroke-width="2" transform="rotate(20 730 880)"/>
+  <!-- Leaf veins -->
+  <line x1="580" y1="650" x2="580" y2="850" stroke="#2a5a2a" stroke-width="1.5" transform="rotate(-20 580 750)"/>
+  <line x1="720" y1="605" x2="720" y2="795" stroke="#2a5a2a" stroke-width="1.5" transform="rotate(15 720 700)"/>
+  <!-- Baseboard -->
+  <rect x="0" y="1550" width="1280" height="50" fill="#e8ddd0"/>
+  <line x1="0" y1="1550" x2="1280" y2="1550" stroke="#c8b8a0" stroke-width="2"/>
+</svg>

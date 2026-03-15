@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--METADATA
+-IPTC:ObjectName=Borough Market stalls
+-EXIF:ImageDescription=Colorful market stalls with fresh produce under covered walkway
+-IPTC:By-line=Jane Doe
+-EXIF:Copyright=2024 Jane Doe
+-EXIF:DateTimeOriginal=2024:09:12 11:30:00
+-EXIF:Make=Sony
+-EXIF:Model=ILCE-7M4
+-EXIF:LensModel=FE 24-70mm F2.8 GM II
+-EXIF:LensMake=Sony
+-EXIF:ExposureTime=1/60
+-EXIF:FNumber=4/1
+-EXIF:ISO=400
+-EXIF:FocalLength=35/1
+-EXIF:FocalLengthIn35mmFormat=35
+-EXIF:GPSLatitude=51/1 30/1 22/1
+-EXIF:GPSLatitudeRef=N
+-EXIF:GPSLongitude=0/1 5/1 24/1
+-EXIF:GPSLongitudeRef=W
+-IPTC:Country-PrimaryLocationCode=GB
+-IPTC:Country-PrimaryLocationName=United Kingdom
+-IPTC:Province-State=England
+-IPTC:City=London
+-IPTC:Sub-location=Borough Market
+-IPTC:Keywords=market
+-IPTC:Keywords=food
+-IPTC:Keywords=london
+-IPTC:Keywords=street
+-XMP:Rating=5
+METADATA-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1920" viewBox="0 0 1280 1920">
+  <rect width="1280" height="1920" fill="#e8ddd0"/>
+  <!-- Covered roof structure -->
+  <rect x="0" y="0" width="1280" height="200" fill="#5a4a3a"/>
+  <line x1="0" y1="200" x2="1280" y2="200" stroke="#3a2a1a" stroke-width="4"/>
+  <!-- Roof beams -->
+  <line x1="200" y1="0" x2="200" y2="200" stroke="#3a2a1a" stroke-width="6"/>
+  <line x1="640" y1="0" x2="640" y2="200" stroke="#3a2a1a" stroke-width="6"/>
+  <line x1="1080" y1="0" x2="1080" y2="200" stroke="#3a2a1a" stroke-width="6"/>
+  <!-- Support columns -->
+  <rect x="180" y="200" width="40" height="1500" fill="#5a4a3a" stroke="#3a2a1a" stroke-width="2"/>
+  <rect x="1060" y="200" width="40" height="1500" fill="#5a4a3a" stroke="#3a2a1a" stroke-width="2"/>
+  <!-- Stall 1 - fruits -->
+  <rect x="260" y="400" width="760" height="150" fill="#8b4513"/>
+  <circle cx="340" cy="380" r="25" fill="#e74c3c"/>
+  <circle cx="400" cy="375" r="25" fill="#e74c3c"/>
+  <circle cx="460" cy="380" r="25" fill="#f39c12"/>
+  <circle cx="520" cy="375" r="25" fill="#f39c12"/>
+  <circle cx="580" cy="380" r="25" fill="#27ae60"/>
+  <circle cx="640" cy="375" r="25" fill="#27ae60"/>
+  <circle cx="700" cy="380" r="25" fill="#e67e22"/>
+  <circle cx="760" cy="375" r="25" fill="#e67e22"/>
+  <!-- Stall 2 - cheese/bread -->
+  <rect x="260" y="700" width="760" height="150" fill="#6b4e3d"/>
+  <rect x="300" y="680" width="80" height="40" fill="#f5deb3" rx="10"/>
+  <rect x="420" y="680" width="80" height="40" fill="#daa520" rx="10"/>
+  <rect x="540" y="680" width="80" height="40" fill="#f5deb3" rx="10"/>
+  <rect x="660" y="680" width="80" height="40" fill="#daa520" rx="10"/>
+  <rect x="780" y="680" width="80" height="40" fill="#f5deb3" rx="10"/>
+  <!-- Stall 3 - flowers -->
+  <rect x="260" y="1000" width="760" height="150" fill="#5a7a5a"/>
+  <circle cx="340" cy="970" r="30" fill="#e91e63" opacity="0.8"/>
+  <circle cx="420" cy="975" r="28" fill="#9c27b0" opacity="0.8"/>
+  <circle cx="500" cy="970" r="30" fill="#ff9800" opacity="0.8"/>
+  <circle cx="580" cy="975" r="28" fill="#e91e63" opacity="0.8"/>
+  <circle cx="660" cy="970" r="30" fill="#ffeb3b" opacity="0.8"/>
+  <circle cx="740" cy="975" r="28" fill="#9c27b0" opacity="0.8"/>
+  <!-- Floor -->
+  <rect x="0" y="1700" width="1280" height="220" fill="#8a7a6a"/>
+  <!-- Cobblestone pattern -->
+  <rect x="50" y="1720" width="60" height="40" fill="#7a6a5a" rx="5"/>
+  <rect x="130" y="1720" width="60" height="40" fill="#7a6a5a" rx="5"/>
+  <rect x="210" y="1720" width="60" height="40" fill="#7a6a5a" rx="5"/>
+  <rect x="90" y="1780" width="60" height="40" fill="#7a6a5a" rx="5"/>
+  <rect x="170" y="1780" width="60" height="40" fill="#7a6a5a" rx="5"/>
+  <rect x="250" y="1780" width="60" height="40" fill="#7a6a5a" rx="5"/>
+</svg>

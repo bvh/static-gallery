@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--METADATA
+-IPTC:ObjectName=Morning light through kitchen window
+-EXIF:ImageDescription=Warm sunlight streaming through the kitchen window onto a plant on the sill
+-EXIF:Artist=Jane Doe
+-EXIF:Copyright=2024 Jane Doe
+-EXIF:DateTimeOriginal=2024:06:15 08:30:00
+-EXIF:Make=Canon
+-EXIF:Model=EOS R5
+-EXIF:LensModel=RF 24-70mm F2.8L IS USM
+-EXIF:LensMake=Canon
+-EXIF:ExposureTime=1/125
+-EXIF:FNumber=28/10
+-EXIF:ISO=200
+-EXIF:FocalLength=35/1
+-EXIF:FocalLengthIn35mmFormat=35
+-EXIF:GPSLatitude=47/1 36/1 22/1
+-EXIF:GPSLatitudeRef=N
+-EXIF:GPSLongitude=122/1 19/1 55/1
+-EXIF:GPSLongitudeRef=W
+-IPTC:Country-PrimaryLocationCode=US
+-IPTC:Country-PrimaryLocationName=United States
+-IPTC:Province-State=Washington
+-IPTC:City=Seattle
+-IPTC:Sub-location=Capitol Hill
+-IPTC:Keywords=morning
+-IPTC:Keywords=light
+-IPTC:Keywords=kitchen
+-IPTC:Keywords=home
+-XMP:Rating=4
+METADATA-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1280" viewBox="0 0 1920 1280">
+  <rect width="1920" height="1280" fill="#f5f0e8"/>
+  <!-- Window frame -->
+  <rect x="560" y="80" width="800" height="900" fill="none" stroke="#4a3728" stroke-width="12"/>
+  <line x1="960" y1="80" x2="960" y2="980" stroke="#4a3728" stroke-width="8"/>
+  <line x1="560" y1="530" x2="1360" y2="530" stroke="#4a3728" stroke-width="8"/>
+  <!-- Sky through window -->
+  <rect x="566" y="86" width="388" height="438" fill="#87ceeb"/>
+  <rect x="966" y="86" width="388" height="438" fill="#87ceeb"/>
+  <rect x="566" y="536" width="388" height="438" fill="#87ceeb"/>
+  <rect x="966" y="536" width="388" height="438" fill="#87ceeb"/>
+  <!-- Light rays -->
+  <line x1="700" y1="200" x2="400" y2="1100" stroke="#ffd700" stroke-width="3" opacity="0.3"/>
+  <line x1="850" y1="200" x2="550" y2="1100" stroke="#ffd700" stroke-width="3" opacity="0.25"/>
+  <line x1="1000" y1="200" x2="700" y2="1100" stroke="#ffd700" stroke-width="3" opacity="0.2"/>
+  <line x1="1150" y1="200" x2="850" y2="1100" stroke="#ffd700" stroke-width="3" opacity="0.15"/>
+  <!-- Window sill -->
+  <rect x="520" y="980" width="880" height="30" fill="#5c4033" stroke="#4a3728" stroke-width="4"/>
+  <!-- Plant pot on sill -->
+  <rect x="880" y="920" width="80" height="60" fill="#c0613a" stroke="#8b3a1a" stroke-width="3" rx="4"/>
+  <!-- Plant leaves -->
+  <ellipse cx="920" cy="880" rx="30" ry="20" fill="#3a7a3a" transform="rotate(-30 920 880)"/>
+  <ellipse cx="900" cy="860" rx="25" ry="18" fill="#4a8a4a" transform="rotate(20 900 860)"/>
+  <ellipse cx="940" cy="850" rx="28" ry="16" fill="#3a7a3a" transform="rotate(-15 940 850)"/>
+  <ellipse cx="910" cy="840" rx="22" ry="15" fill="#5a9a5a" transform="rotate(35 910 840)"/>
+  <line x1="920" y1="920" x2="920" y2="850" stroke="#2a5a2a" stroke-width="3"/>
+  <line x1="920" y1="890" x2="900" y2="860" stroke="#2a5a2a" stroke-width="2"/>
+  <line x1="920" y1="880" x2="940" y2="850" stroke="#2a5a2a" stroke-width="2"/>
+  <!-- Counter surface -->
+  <rect x="0" y="1060" width="1920" height="220" fill="#6b4e3d"/>
+  <line x1="0" y1="1060" x2="1920" y2="1060" stroke="#4a3728" stroke-width="4"/>
+</svg>
