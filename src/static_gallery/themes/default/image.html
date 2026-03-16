@@ -17,13 +17,13 @@
                 <p>{{ page.image.description }}</p>
                 {%- endif -%}
                 {%- if page.image.camera or page.image.focal_length or page.image.aperture or page.image.shutter or page.image.iso -%}
-                <p class="exif">
-                    {%- if page.image.camera -%}{{ page.image.camera }}{%- endif -%}
-                    {%- if page.image.focal_length -%} {{ page.image.focal_length }}{%- endif -%}
-                    {%- if page.image.aperture -%} {{ page.image.aperture }}{%- endif -%}
-                    {%- if page.image.shutter -%} {{ page.image.shutter }}{%- endif -%}
-                    {%- if page.image.iso -%} ISO {{ page.image.iso }}{%- endif -%}
-                </p>
+                <ul class="exif">
+                    {%- if page.image.camera -%}<li>{{ page.image.camera }}</li>{%- endif -%}
+                    {%- if page.image.focal_length -%}<li>{{ page.image.focal_length }}</li>{%- endif -%}
+                    {%- if page.image.aperture -%}<li>{{ page.image.aperture }}</li>{%- endif -%}
+                    {%- if page.image.shutter -%}<li>{{ page.image.shutter }}</li>{%- endif -%}
+                    {%- if page.image.iso -%}<li>ISO {{ page.image.iso }}</li>{%- endif -%}
+                </ul>
                 {%- endif -%}
                 {%- if page.image.location or page.image.city or page.image.country -%}
                 <p class="location">
