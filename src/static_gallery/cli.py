@@ -9,6 +9,7 @@ from static_gallery.config import Config
 from static_gallery.index import SuffixIndex
 from static_gallery.scanner import Scanner
 
+# map of command line parameters that get passed on to the Config object
 CLI_ARG_MAP = {
     "title": "site.title",
     "language": "site.language",
@@ -19,7 +20,51 @@ CLI_ARG_MAP = {
 }
 
 
-def _build_parser():
+def main() -> int:
+    logging.basicConfig(level=logging.INFO)
+
+    # parse the command line
+    args = _argument_parser().parse_args()
+
+    # create a map of command line value to pass to the Config object
+    cli_args = {}
+    for arg_name, config_key in CLI_ARG_MAP.items():
+        value = getattr(args, arg_name, None)
+        if value is not None:
+            cli_args[config_key] = value
+
+    # create global configuraton object, passing the CLI argument map
+    # as we do so. Note that precedence is (highest to lowest): CLI
+    # arguments over environment variables over configuration file
+    # properties over defaults.
+    config = Config(cli_args=cli_args)
+
+    # if a config file path is present in the global config (either
+    # from) the command line or env variable, load it.
+    if config.config_path:
+        config.load_file(config.config_path)
+
+    # main workflow:
+    #   - scan the source directory, creating both a tree of nodes and
+    #     an index to faciliate shortcode lookups
+    #   - build the site using the node tree and index
+    try:
+        source_path = os.path.abspath(args.source)
+        index = SuffixIndex(source_path)
+        source_root = Scanner(config, index).scan(source_path)
+        Builder(config).render(source_root, source_path, index)
+    except Exception as e:
+        logging.getLogger(__name__).error("%s", e)
+        return 1
+
+    # start the staging server, if requested
+    if args.serve:
+        _serve(os.path.abspath(config.public_path), args.port)
+
+    return 0
+
+
+def _argument_parser():
     parser = argparse.ArgumentParser(
         description="static site and image gallery generator"
     )
@@ -45,37 +90,6 @@ def _build_parser():
         help="port for the HTTP server (default: 8000)",
     )
     return parser
-
-
-def main() -> int:
-    logging.basicConfig(level=logging.INFO)
-
-    args = _build_parser().parse_args()
-
-    cli_args = {}
-    for arg_name, config_key in CLI_ARG_MAP.items():
-        value = getattr(args, arg_name, None)
-        if value is not None:
-            cli_args[config_key] = value
-
-    config = Config(cli_args=cli_args)
-
-    if config.config_path:
-        config.load_file(config.config_path)
-
-    try:
-        source_path = os.path.abspath(args.source)
-        index = SuffixIndex(source_path)
-        source_root = Scanner(config, index).scan(source_path)
-        Builder(config).render(source_root, source_path, index)
-    except Exception as e:
-        logging.getLogger(__name__).error("%s", e)
-        return 1
-
-    if args.serve:
-        _serve(os.path.abspath(config.public_path), args.port)
-
-    return 0
 
 
 def _serve(public_path, port):
