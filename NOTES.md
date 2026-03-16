@@ -1,5 +1,34 @@
 # MISCELLANEOUS NOTES
 
+## Setup for Web Site Use
+
+### Create a Bare UV Project
+```
+uv init --bare brianvanhorne.com
+cd brianvanhorne.com
+```
+
+### Install Static Gallery from GitHub
+```
+uv add git+ssh://git@github.com/bvh/static-gallery
+uv run gallery --help
+```
+
+### Update Static Gallery
+```
+uv add --upgrade static-gallery
+uv run gallery --help
+```
+
+### Build Site and Run Staging Server
+```
+uv run gallery site --serve
+open http://localhost:8000/
+```
+This will build the site to public/ and serve it via the build in
+staging server.
+
+
 ## Project Initialization
 
 ### Create the GitHub Repository
