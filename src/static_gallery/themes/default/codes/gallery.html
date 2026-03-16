@@ -1,35 +1,5 @@
-<div class="gallery">
-    {% for img in images %}
-    <figure>
-        <a href="{{ img.url }}"><img src="{{ img.src }}" alt="{{ img.alt_text or img.name }}"></a>
-        {% if img.title or img.description or img.camera or img.location or img.city or img.country %}
-        <figcaption>
-            {% if img.title %}
-            <strong>{{ img.title }}</strong>
-            {% endif %}
-            {% if img.description %}
-            <p>{{ img.description }}</p>
-            {% endif %}
-            {% if img.camera or img.focal_length or img.aperture or img.shutter or img.iso %}
-            <p class="exif">
-                {% if img.camera %}{{ img.camera }}{% endif %}
-                {% if img.focal_length %} {{ img.focal_length }}{% endif %}
-                {% if img.aperture %} {{ img.aperture }}{% endif %}
-                {% if img.shutter %} {{ img.shutter }}{% endif %}
-                {% if img.iso %} ISO {{ img.iso }}{% endif %}
-            </p>
-            {% endif %}
-            {% if img.location or img.city or img.country %}
-            <p class="location">
-                {% set parts = [] %}
-                {% if img.location %}{% if parts.append(img.location) %}{% endif %}{% endif %}
-                {% if img.city %}{% if parts.append(img.city) %}{% endif %}{% endif %}
-                {% if img.country %}{% if parts.append(img.country) %}{% endif %}{% endif %}
-                {{ parts | join(", ") }}
-            </p>
-            {% endif %}
-        </figcaption>
-        {% endif %}
-    </figure>
-    {% endfor %}
-</div>
+<ul class="gallery">
+    {%- for img in images %}
+    <li><a href="{{ img.url }}"><img src="{{ img.src }}" alt="{{ img.alt_text or img.name }}"></a></li>
+    {%- endfor %}
+</ul>
