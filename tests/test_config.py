@@ -82,21 +82,6 @@ def test_config_file_value_with_hash(tmp_path):
     assert config.get("site.title") == "My # Cool Site"
 
 
-def test_set_inferred():
-    config = Config()
-    config.set_inferred("site.title", "Inferred Title")
-    assert config.get("site.title") == "Inferred Title"
-
-
-def test_set_inferred_loses_to_file(tmp_path):
-    conf = tmp_path / "site.conf"
-    conf.write_text("site.title: File Title\n")
-    config = Config()
-    config.set_inferred("site.title", "Inferred Title")
-    config.load_file(str(conf))
-    assert config.get("site.title") == "File Title"
-
-
 def test_site_property():
     config = Config(cli_args={"site.title": "CLI Title"})
     site = config.site

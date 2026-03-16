@@ -22,7 +22,6 @@ class Config:
             "site.language": "en-us",
             "public_path": os.path.join(os.getcwd(), "public"),
         }
-        self._inferred = {}
         self._file = {}
         self._env = {}
         self._cli = {}
@@ -60,11 +59,8 @@ class Config:
                     )
                 self._file[key] = value
 
-    def set_inferred(self, key, value):
-        self._inferred[key] = value
-
     def get(self, key, default=None):
-        for layer in (self._cli, self._env, self._file, self._inferred, self._defaults):
+        for layer in (self._cli, self._env, self._file, self._defaults):
             if key in layer:
                 return layer[key]
         return default
@@ -77,7 +73,6 @@ class Config:
             self._cli,
             self._env,
             self._file,
-            self._inferred,
             self._defaults,
         ):
             for key, value in layer.items():
