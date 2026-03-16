@@ -4,8 +4,9 @@ import logging
 import os
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
-from static_gallery.config import Config
 from static_gallery.builder import Builder
+from static_gallery.config import Config
+from static_gallery.index import SuffixIndex
 from static_gallery.scanner import Scanner
 
 CLI_ARG_MAP = {
@@ -64,8 +65,9 @@ def main() -> int:
 
     try:
         source_path = os.path.abspath(args.source)
-        source_root = Scanner(config).scan(source_path)
-        Builder(config).render(source_root, source_path)
+        index = SuffixIndex(source_path)
+        source_root = Scanner(config, index).scan(source_path)
+        Builder(config).render(source_root, source_path, index)
     except Exception as e:
         logging.getLogger(__name__).error("%s", e)
         return 1

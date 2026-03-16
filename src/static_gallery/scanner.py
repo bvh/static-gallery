@@ -4,8 +4,9 @@ from static_gallery.node import Node, NodeType
 
 
 class Scanner:
-    def __init__(self, config=None):
+    def __init__(self, config=None, index=None):
         self.config = config
+        self._index = index
 
     def scan(self, path):
         root = Node(os.path.abspath(path), type=NodeType.HOME)
@@ -14,6 +15,10 @@ class Scanner:
         else:
             raise ValueError(f"Site path is not a directory: {root.path}.")
         return root
+
+    def _add_to_index(self, node):
+        if self._index:
+            self._index.add(node)
 
     def _scan_directory(self, parent):
         count = 0
@@ -73,18 +78,22 @@ class Scanner:
                 image_stems[md.stem].content_path = md.path
             else:
                 parent.add_child(md)
+                self._add_to_index(md)
                 count += 1
 
         for img in images:
             parent.add_child(img)
+            self._add_to_index(img)
             count += 1
 
         for d in dirs:
             parent.add_child(d)
+            self._add_to_index(d)
             count += 1
 
         for asset in statics:
             parent.add_child(asset)
+            self._add_to_index(asset)
             count += 1
 
         return count

@@ -7,6 +7,7 @@ import shutil
 from jinja2 import Environment, FileSystemLoader, PackageLoader
 from markupsafe import Markup
 
+from static_gallery.index import SuffixIndex
 from static_gallery.markdown import MarkdownRenderer
 from static_gallery.node import NodeType, build_image_data
 from static_gallery.shortcodes import ShortcodeProcessor
@@ -42,14 +43,14 @@ class Builder:
             "version": meta["Version"],
         }
 
-    def render(self, root_node, source_path):
+    def render(self, root_node, source_path, index=None):
         self._source_path = os.path.abspath(source_path)
         path_map = {}
         self._collect_output_paths(root_node, path_map)
         self._check_collisions(path_map)
-        self._shortcodes = ShortcodeProcessor(
-            root_node, self._source_path, self.env, self._resolve_url
-        )
+        if index is None:
+            index = SuffixIndex.build_from_tree(root_node, self._source_path)
+        self._shortcodes = ShortcodeProcessor(index, self.env, self._resolve_url)
         os.makedirs(self._public_path, exist_ok=True)
         logger.info("Rendering site to %s", self._public_path)
         self._render_node(root_node)
@@ -170,8 +171,7 @@ class Builder:
         if md_path and os.path.exists(md_path):
             with open(md_path) as f:
                 text = f.read()
-            if self._shortcodes:
-                text = self._shortcodes.process(text, node)
+            text = self._shortcodes.process(text, node)
             result = self._md.render(text, remove_title=True)
             title = result.title
             content = Markup(result.html)

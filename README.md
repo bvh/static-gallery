@@ -121,14 +121,21 @@ On individual image pages, the image is available as `page.image`:
 Shortcodes are special tags in markdown content that expand into HTML during
 rendering. They use `<<…>>` syntax.
 
-**Embed shortcodes** reference files by their source-relative path (starting
-with `/`):
+**Embed shortcodes** reference files by path. Three forms are supported:
 
-| Syntax | Result |
-|--------|--------|
-| `<</photos/sunset.jpg>>` | `<img>` tag linking to the image file |
-| `<</src/app.py>>` | `<pre><code>` block with the file contents (for known code extensions) |
-| `<</files/data.csv>>` | `<a>` link to the file |
+| Form | Example | Description |
+|------|---------|-------------|
+| Absolute | `<</photos/sunset.jpg>>` | Full path from the source root |
+| Relative | `<<photos/sunset.jpg>>` | Relative path from the source root |
+| Suffix | `<<sunset.jpg>>` | Filename or partial path — must be unambiguous |
+
+The result depends on the file type:
+
+| File type | Result |
+|-----------|--------|
+| Image | `<img>` tag linking to the image file |
+| Code (`.py`, `.js`, etc.) | `<pre><code>` block with the file contents |
+| Other | `<a>` link to the file |
 
 **Named shortcodes** invoke built-in functions:
 

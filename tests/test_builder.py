@@ -2,10 +2,12 @@ import os
 
 import pytest
 
-from static_gallery.config import Config
-from static_gallery.node import Node
 from static_gallery.builder import Builder
+from static_gallery.config import Config
+from static_gallery.index import SuffixIndex
+from static_gallery.node import Node
 from static_gallery.scanner import Scanner
+from static_gallery.shortcodes import ShortcodeProcessor
 
 
 def _make_home(tmp_path, index_text=None):
@@ -144,9 +146,17 @@ def test_template_name_gallery():
 # --- _build_page_context ---
 
 
+def _init_shortcodes(builder, source_path):
+    """Set up shortcode processing so _build_page_context can be called directly."""
+    builder._source_path = source_path
+    index = SuffixIndex(source_path)
+    builder._shortcodes = ShortcodeProcessor(index, builder.env, builder._resolve_url)
+
+
 def test_page_context_from_markdown(tmp_path):
     config = Config()
     r = Builder(config)
+    _init_shortcodes(r, str(tmp_path))
     md_file = tmp_path / "page.md"
     md_file.write_text("# My Title\n\nSome content.")
     node = Node(str(md_file), type="MARKDOWN")
@@ -159,6 +169,7 @@ def test_page_context_from_markdown(tmp_path):
 def test_page_context_title_fallback(tmp_path):
     config = Config()
     r = Builder(config)
+    _init_shortcodes(r, str(tmp_path))
     md_file = tmp_path / "page.md"
     md_file.write_text("No heading here, just text.")
     node = Node(str(md_file), type="MARKDOWN")

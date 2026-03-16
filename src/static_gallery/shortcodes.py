@@ -1,7 +1,6 @@
 import fnmatch
 import html
 import logging
-import os
 import re
 import shlex
 
@@ -37,37 +36,10 @@ CODE_EXTENSIONS = {
 
 
 class ShortcodeProcessor:
-    def __init__(self, root_node, source_path, env, resolve_url):
-        self._root = root_node
-        self._source_path = source_path
+    def __init__(self, index, env, resolve_url):
+        self._index = index
         self._env = env
         self._resolve_url = resolve_url
-        self._index = self._build_index(root_node)
-
-    def _build_index(self, root):
-        index = {}
-        self._walk_index(root, index)
-        return index
-
-    def _walk_index(self, node, index):
-        rel = os.path.relpath(node.path, self._source_path)
-        if rel != ".":
-            index[rel] = node
-
-        for img in node.images:
-            img_rel = os.path.relpath(img.path, self._source_path)
-            index[img_rel] = img
-
-        for page in node.pages:
-            page_rel = os.path.relpath(page.path, self._source_path)
-            index[page_rel] = page
-
-        for asset in node.assets:
-            asset_rel = os.path.relpath(asset.path, self._source_path)
-            index[asset_rel] = asset
-
-        for d in node.dirs:
-            self._walk_index(d, index)
 
     def process(self, text, current_node):
         def replace(match):
@@ -77,17 +49,19 @@ class ShortcodeProcessor:
             if inner.startswith("/"):
                 return self._handle_embed(inner, current_node)
             if re.match(r"^[a-zA-Z0-9_-]", inner):
+                first_token = inner.split()[0]
+                # Route to embed if the token looks like a file path (contains
+                # '.' or '/').  This means named shortcodes must not contain
+                # dots — revisit this heuristic if a dotted name is ever needed.
+                if "." in first_token or "/" in first_token:
+                    return self._handle_embed(inner, current_node)
                 return self._handle_named(inner, current_node)
             return match.group(0)
 
         return SHORTCODE_RE.sub(replace, text)
 
     def _handle_embed(self, path, current_node):
-        rel_path = path.lstrip("/")
-        target = self._index.get(rel_path)
-        if target is None:
-            logger.warning("Shortcode target not found: %s", path)
-            return html.escape(f"<<{path}>>")
+        target = self._index.resolve(path)
 
         if target.type == NodeType.IMAGE:
             url = self._resolve_url(current_node, target, image_file=True)
