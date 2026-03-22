@@ -96,7 +96,7 @@ class TestAddChild:
 
     def test_add_markdown(self, tmp_path):
         parent = Node(str(tmp_path))
-        child = self._make_child(tmp_path, "x.md", NodeType.MARKDOWN)
+        child = self._make_child(tmp_path, "x.md", NodeType.PAGE)
         parent.add_child(child)
         assert child in parent.pages
 
@@ -155,7 +155,7 @@ class TestTemplateName:
     def test_markdown(self, tmp_path):
         f = tmp_path / "page.md"
         f.write_text("# Hi")
-        node = Node(str(f), type=NodeType.MARKDOWN)
+        node = Node(str(f), type=NodeType.PAGE)
         assert node.template_name == "default.html"
 
     def test_image(self, tmp_path):
@@ -169,7 +169,7 @@ class TestTitleFallback:
     def test_markdown_uses_stem(self, tmp_path):
         f = tmp_path / "my-page.md"
         f.write_text("# Hi")
-        node = Node(str(f), type=NodeType.MARKDOWN)
+        node = Node(str(f), type=NodeType.PAGE)
         assert node.title_fallback == "my-page"
 
     def test_image_uses_stem(self, tmp_path):
@@ -198,7 +198,7 @@ class TestIsGallery:
         page = tmp_path / "y.md"
         page.write_text("# Hi")
         node.images = [Node(str(img), type=NodeType.IMAGE)]
-        node.pages = [Node(str(page), type=NodeType.MARKDOWN)]
+        node.pages = [Node(str(page), type=NodeType.PAGE)]
         assert not node.is_gallery()
 
     def test_empty(self, tmp_path):
@@ -210,7 +210,7 @@ class TestGetMarkdownPath:
     def test_markdown_returns_own_path(self, tmp_path):
         f = tmp_path / "page.md"
         f.write_text("# Hi")
-        node = Node(str(f), type=NodeType.MARKDOWN)
+        node = Node(str(f), type=NodeType.PAGE)
         assert node.get_markdown_path() == str(f)
 
     def test_container_returns_index_path(self, tmp_path):
@@ -271,9 +271,9 @@ class TestToDict:
     def test_basic_shape(self, tmp_path):
         f = tmp_path / "page.md"
         f.write_text("# Hi")
-        node = Node(str(f), type=NodeType.MARKDOWN)
+        node = Node(str(f), type=NodeType.PAGE)
         d = node.to_dict()
-        assert d["type"] == "MARKDOWN"
+        assert d["type"] == "PAGE"
         assert d["path"] == str(f)
         assert d["stem"] == "page"
         assert d["suffix"] == ".md"
@@ -281,7 +281,7 @@ class TestToDict:
 
     def test_children_included(self, tmp_path):
         parent = Node(str(tmp_path), type=NodeType.HOME)
-        child = Node(str(tmp_path), type=NodeType.MARKDOWN)
+        child = Node(str(tmp_path), type=NodeType.PAGE)
         parent.add_child(child)
         d = parent.to_dict()
         assert "pages" in d
@@ -291,7 +291,7 @@ class TestToDict:
         parent = Node(str(tmp_path), type=NodeType.HOME)
         f = tmp_path / "page.md"
         f.write_text("# Hi")
-        child = Node(str(f), parent=parent, type=NodeType.MARKDOWN)
+        child = Node(str(f), parent=parent, type=NodeType.PAGE)
         d = child.to_dict()
         assert d["parent"] == str(tmp_path)
 

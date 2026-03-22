@@ -7,7 +7,6 @@ import shutil
 from jinja2 import Environment, FileSystemLoader, PackageLoader
 from markupsafe import Markup
 
-from static_gallery.index import SuffixIndex
 from static_gallery.markdown import MarkdownRenderer
 from static_gallery.node import NodeType, build_image_data
 from static_gallery.shortcodes import ShortcodeProcessor
@@ -43,17 +42,15 @@ class Builder:
             "version": meta["Version"],
         }
 
-    def render(self, root_node, source_path, index=None):
-        self._source_path = os.path.abspath(source_path)
+    def render(self, site):
+        self._source_path = site.source_path
         path_map = {}
-        self._collect_output_paths(root_node, path_map)
+        self._collect_output_paths(site.root, path_map)
         self._check_collisions(path_map)
-        if index is None:
-            index = SuffixIndex.build_from_tree(root_node, self._source_path)
-        self._shortcodes = ShortcodeProcessor(index, self.env, self._resolve_url)
+        self._shortcodes = ShortcodeProcessor(site.index, self.env, self._resolve_url)
         os.makedirs(self._public_path, exist_ok=True)
         logger.info("Rendering site to %s", self._public_path)
-        self._render_node(root_node)
+        self._render_node(site.root)
         self._copy_theme_assets()
         logger.info("Site rendered successfully")
 
@@ -126,7 +123,7 @@ class Builder:
             os.makedirs(os.path.dirname(asset_dest), exist_ok=True)
             shutil.copy2(asset.path, asset_dest)
 
-        # Recurse into child pages (MARKDOWN nodes)
+        # Recurse into child pages (PAGE nodes)
         for page in node.pages:
             self._render_node(page)
 
@@ -137,7 +134,7 @@ class Builder:
     def _get_output_path(self, node, source_path):
         if node.type == NodeType.HOME:
             return "index.html"
-        elif node.type in (NodeType.MARKDOWN, NodeType.IMAGE):
+        elif node.type in (NodeType.PAGE, NodeType.IMAGE):
             rel = os.path.relpath(node.path, source_path)
             stem = os.path.splitext(rel)[0]
             return os.path.join(stem, "index.html")

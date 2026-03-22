@@ -6,7 +6,6 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 from static_gallery.builder import Builder
 from static_gallery.config import Config
-from static_gallery.index import SuffixIndex
 from static_gallery.scanner import Scanner
 
 # map of command line parameters that get passed on to the Config object
@@ -44,15 +43,12 @@ def main() -> int:
     if config.config_path:
         config.load_file(config.config_path)
 
-    # main workflow:
-    #   - scan the source directory, creating both a tree of nodes and
-    #     an index to faciliate shortcode lookups
-    #   - build the site using the node tree and index
+    # main workflow: scan the source directory into a Site object
+    # (node tree + index), then build the output
     try:
         source_path = os.path.abspath(args.source)
-        index = SuffixIndex(source_path)
-        source_root = Scanner(config, index).scan(source_path)
-        Builder(config).render(source_root, source_path, index)
+        site = Scanner(config).scan(source_path)
+        Builder(config).render(site)
     except Exception as e:
         logging.getLogger(__name__).error("%s", e)
         return 1

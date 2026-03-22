@@ -8,8 +8,8 @@ from static_gallery.scanner import Scanner
 def test_scan_works_without_config(tmp_path):
     index = tmp_path / "index.md"
     index.write_text("# Hello")
-    root = Scanner().scan(str(tmp_path))
-    assert root.type == "HOME"
+    site = Scanner().scan(str(tmp_path))
+    assert site.root.type == "HOME"
 
 
 def test_scan_with_config_loads_site_conf(tmp_path):
@@ -38,10 +38,10 @@ def test_scan_non_directory_raises(tmp_path):
 def test_index_md_sets_parent_text(tmp_path):
     index = tmp_path / "index.md"
     index.write_text("# Home")
-    root = Scanner().scan(str(tmp_path))
-    assert root.index_path == str(index)
+    site = Scanner().scan(str(tmp_path))
+    assert site.root.index_path == str(index)
     # index.md should not appear as a separate page node
-    assert len(root.pages) == 0
+    assert len(site.root.pages) == 0
 
 
 def test_dotfiles_are_skipped(tmp_path):
@@ -49,10 +49,10 @@ def test_dotfiles_are_skipped(tmp_path):
     (tmp_path / ".hidden").write_text("secret")
     (tmp_path / ".hiddendir").mkdir()
     (tmp_path / ".hiddendir" / "file.txt").write_text("stuff")
-    root = Scanner().scan(str(tmp_path))
-    assert len(root.pages) == 0
-    assert len(root.assets) == 0
-    assert len(root.dirs) == 0
+    site = Scanner().scan(str(tmp_path))
+    assert len(site.root.pages) == 0
+    assert len(site.root.assets) == 0
+    assert len(site.root.dirs) == 0
 
 
 def test_symlinks_are_skipped(tmp_path):
@@ -61,46 +61,46 @@ def test_symlinks_are_skipped(tmp_path):
     real.write_text("# Real")
     link = tmp_path / "link.md"
     link.symlink_to(real)
-    root = Scanner().scan(str(tmp_path))
+    site = Scanner().scan(str(tmp_path))
     # real.md is counted, link.md is not
-    assert len(root.pages) == 1
-    assert root.pages[0].name == "real.md"
+    assert len(site.root.pages) == 1
+    assert site.root.pages[0].name == "real.md"
 
 
 def test_markdown_files_classified(tmp_path):
     (tmp_path / "page.md").write_text("# Page")
     (tmp_path / "doc.markdown").write_text("# Doc")
-    root = Scanner().scan(str(tmp_path))
-    assert len(root.pages) == 2
-    types = {p.type for p in root.pages}
-    assert types == {"MARKDOWN"}
+    site = Scanner().scan(str(tmp_path))
+    assert len(site.root.pages) == 2
+    types = {p.type for p in site.root.pages}
+    assert types == {"PAGE"}
 
 
 def test_image_files_classified(tmp_path):
     for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp"]:
         (tmp_path / f"img{ext}").write_bytes(b"\x00")
-    root = Scanner().scan(str(tmp_path))
-    assert len(root.images) == 5
-    assert all(i.type == "IMAGE" for i in root.images)
+    site = Scanner().scan(str(tmp_path))
+    assert len(site.root.images) == 5
+    assert all(i.type == "IMAGE" for i in site.root.images)
 
 
 def test_static_files_classified(tmp_path):
     (tmp_path / "style.css").write_text("body {}")
     (tmp_path / "script.js").write_text("console.log()")
     (tmp_path / "data.json").write_text("{}")
-    root = Scanner().scan(str(tmp_path))
-    assert len(root.assets) == 3
-    assert all(a.type == "STATIC" for a in root.assets)
+    site = Scanner().scan(str(tmp_path))
+    assert len(site.root.assets) == 3
+    assert all(a.type == "STATIC" for a in site.root.assets)
 
 
 def test_subdirectory_classified_as_directory(tmp_path):
     sub = tmp_path / "subdir"
     sub.mkdir()
     (sub / "page.md").write_text("# Sub page")
-    root = Scanner().scan(str(tmp_path))
-    assert len(root.dirs) == 1
-    assert root.dirs[0].type == "DIRECTORY"
-    assert root.dirs[0].name == "subdir"
+    site = Scanner().scan(str(tmp_path))
+    assert len(site.root.dirs) == 1
+    assert site.root.dirs[0].type == "DIRECTORY"
+    assert site.root.dirs[0].name == "subdir"
 
 
 def test_gallery_directory(tmp_path):
@@ -108,9 +108,9 @@ def test_gallery_directory(tmp_path):
     gallery.mkdir()
     (gallery / "a.jpg").write_bytes(b"\x00")
     (gallery / "b.png").write_bytes(b"\x00")
-    root = Scanner().scan(str(tmp_path))
-    assert len(root.dirs) == 1
-    assert root.dirs[0].type == "GALLERY"
+    site = Scanner().scan(str(tmp_path))
+    assert len(site.root.dirs) == 1
+    assert site.root.dirs[0].type == "GALLERY"
 
 
 def test_mixed_directory_not_gallery(tmp_path):
@@ -118,22 +118,22 @@ def test_mixed_directory_not_gallery(tmp_path):
     sub.mkdir()
     (sub / "photo.jpg").write_bytes(b"\x00")
     (sub / "readme.md").write_text("# Hi")
-    root = Scanner().scan(str(tmp_path))
-    assert root.dirs[0].type == "DIRECTORY"
+    site = Scanner().scan(str(tmp_path))
+    assert site.root.dirs[0].type == "DIRECTORY"
 
 
 def test_empty_directory_skipped(tmp_path):
     (tmp_path / "empty").mkdir()
-    root = Scanner().scan(str(tmp_path))
-    assert len(root.dirs) == 0
+    site = Scanner().scan(str(tmp_path))
+    assert len(site.root.dirs) == 0
 
 
 def test_empty_directory_with_only_dotfiles_skipped(tmp_path):
     sub = tmp_path / "seemsempty"
     sub.mkdir()
     (sub / ".gitkeep").write_text("")
-    root = Scanner().scan(str(tmp_path))
-    assert len(root.dirs) == 0
+    site = Scanner().scan(str(tmp_path))
+    assert len(site.root.dirs) == 0
 
 
 def test_recursive_scanning(tmp_path):
@@ -151,12 +151,12 @@ def test_recursive_scanning(tmp_path):
     deep.mkdir()
     (deep / "photo.jpg").write_bytes(b"\x00")
 
-    root = Scanner().scan(str(tmp_path))
-    assert root.type == "HOME"
-    assert root.index_path is not None
-    assert len(root.dirs) == 1
+    site = Scanner().scan(str(tmp_path))
+    assert site.root.type == "HOME"
+    assert site.root.index_path is not None
+    assert len(site.root.dirs) == 1
 
-    sub_node = root.dirs[0]
+    sub_node = site.root.dirs[0]
     assert sub_node.type == "DIRECTORY"
     assert len(sub_node.pages) == 1
     assert len(sub_node.dirs) == 1
@@ -172,10 +172,10 @@ def test_site_conf_not_loaded_in_subdirectory(tmp_path):
     (sub / "site.conf").write_text("site.title: Nested\n")
     (sub / "page.md").write_text("# Page")
     config = Config()
-    root = Scanner(config).scan(str(tmp_path))
+    site = Scanner(config).scan(str(tmp_path))
     # site.conf in subdir should be treated as a static asset, not loaded
     assert config.get("site.title") is None
-    assert len(root.dirs[0].assets) == 1
+    assert len(site.root.dirs[0].assets) == 1
 
 
 def test_site_conf_skipped_when_config_path_set(tmp_path):
@@ -190,35 +190,35 @@ def test_site_conf_skipped_when_config_path_set(tmp_path):
 def test_index_md_case_insensitive(tmp_path):
     index = tmp_path / "INDEX.MD"
     index.write_text("# Upper")
-    root = Scanner().scan(str(tmp_path))
-    assert root.index_path == str(index)
-    assert len(root.pages) == 0
+    site = Scanner().scan(str(tmp_path))
+    assert site.root.index_path == str(index)
+    assert len(site.root.pages) == 0
 
 
 def test_child_nodes_have_parent_set(tmp_path):
     (tmp_path / "page.md").write_text("# Page")
-    root = Scanner().scan(str(tmp_path))
-    assert root.pages[0].parent is root
+    site = Scanner().scan(str(tmp_path))
+    assert site.root.pages[0].parent is site.root
 
 
 def test_paired_markdown_sets_content_path(tmp_path):
     """photo.md paired with photo.jpg sets content_path on the IMAGE node."""
     (tmp_path / "photo.jpg").write_bytes(b"\xff\xd8\xff")
     (tmp_path / "photo.md").write_text("# My Photo\n\nA beautiful sunset.")
-    root = Scanner().scan(str(tmp_path))
-    assert len(root.images) == 1
-    assert len(root.pages) == 0
-    assert root.images[0].content_path == str(tmp_path / "photo.md")
+    site = Scanner().scan(str(tmp_path))
+    assert len(site.root.images) == 1
+    assert len(site.root.pages) == 0
+    assert site.root.images[0].content_path == str(tmp_path / "photo.md")
 
 
 def test_unpaired_markdown_remains_page(tmp_path):
     """Markdown without a matching image stem stays as a page."""
     (tmp_path / "photo.jpg").write_bytes(b"\xff\xd8\xff")
     (tmp_path / "about.md").write_text("# About")
-    root = Scanner().scan(str(tmp_path))
-    assert len(root.images) == 1
-    assert len(root.pages) == 1
-    assert root.pages[0].name == "about.md"
+    site = Scanner().scan(str(tmp_path))
+    assert len(site.root.images) == 1
+    assert len(site.root.pages) == 1
+    assert site.root.pages[0].name == "about.md"
 
 
 def test_paired_markdown_gallery_classification(tmp_path):
@@ -228,10 +228,10 @@ def test_paired_markdown_gallery_classification(tmp_path):
     (gallery / "a.jpg").write_bytes(b"\xff\xd8\xff")
     (gallery / "b.jpg").write_bytes(b"\xff\xd8\xff")
     (gallery / "a.md").write_text("# Photo A")
-    root = Scanner().scan(str(tmp_path))
-    assert root.dirs[0].type == "GALLERY"
-    assert len(root.dirs[0].images) == 2
-    assert len(root.dirs[0].pages) == 0
+    site = Scanner().scan(str(tmp_path))
+    assert site.root.dirs[0].type == "GALLERY"
+    assert len(site.root.dirs[0].images) == 2
+    assert len(site.root.dirs[0].pages) == 0
 
 
 def test_paired_markdown_mixed_directory(tmp_path):
@@ -241,15 +241,15 @@ def test_paired_markdown_mixed_directory(tmp_path):
     (sub / "photo.jpg").write_bytes(b"\xff\xd8\xff")
     (sub / "photo.md").write_text("# Photo")
     (sub / "about.md").write_text("# About")
-    root = Scanner().scan(str(tmp_path))
-    assert root.dirs[0].type == "DIRECTORY"
+    site = Scanner().scan(str(tmp_path))
+    assert site.root.dirs[0].type == "DIRECTORY"
 
 
 def test_index_md_not_paired_with_image(tmp_path):
     """index.md is consumed as container text, not paired with index.jpg."""
     (tmp_path / "index.md").write_text("# Home")
     (tmp_path / "index.jpg").write_bytes(b"\xff\xd8\xff")
-    root = Scanner().scan(str(tmp_path))
-    assert root.index_path == str(tmp_path / "index.md")
-    assert len(root.images) == 1
-    assert root.images[0].content_path is None
+    site = Scanner().scan(str(tmp_path))
+    assert site.root.index_path == str(tmp_path / "index.md")
+    assert len(site.root.images) == 1
+    assert site.root.images[0].content_path is None

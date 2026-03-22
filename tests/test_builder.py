@@ -57,7 +57,7 @@ def test_output_path_markdown(tmp_path):
     root = _make_home(tmp_path)
     page_file = tmp_path / "about.md"
     page_file.write_text("# About")
-    page = Node(str(page_file), parent=root, type="MARKDOWN")
+    page = Node(str(page_file), parent=root, type="PAGE")
     assert r._get_output_path(page, tmp_path) == "about/index.html"
 
 
@@ -103,7 +103,7 @@ def test_output_path_nested_markdown(tmp_path):
     page_file = sub / "post.md"
     page_file.write_text("# Post")
     dir_node = Node(str(sub), parent=root, type="DIRECTORY")
-    page = Node(str(page_file), parent=dir_node, type="MARKDOWN")
+    page = Node(str(page_file), parent=dir_node, type="PAGE")
     assert r._get_output_path(page, tmp_path) == "blog/post/index.html"
 
 
@@ -119,7 +119,7 @@ def test_template_name_home():
 
 def test_template_name_markdown():
     node = Node.__new__(Node)
-    node.type = "MARKDOWN"
+    node.type = "PAGE"
     assert node.template_name == "default.html"
 
 
@@ -159,7 +159,7 @@ def test_page_context_from_markdown(tmp_path):
     _init_shortcodes(r, str(tmp_path))
     md_file = tmp_path / "page.md"
     md_file.write_text("# My Title\n\nSome content.")
-    node = Node(str(md_file), type="MARKDOWN")
+    node = Node(str(md_file), type="PAGE")
     ctx = r._build_page_context(node)
     assert ctx["title"] == "My Title"
     assert "Some content." in ctx["content"]
@@ -172,7 +172,7 @@ def test_page_context_title_fallback(tmp_path):
     _init_shortcodes(r, str(tmp_path))
     md_file = tmp_path / "page.md"
     md_file.write_text("No heading here, just text.")
-    node = Node(str(md_file), type="MARKDOWN")
+    node = Node(str(md_file), type="PAGE")
     ctx = r._build_page_context(node)
     assert ctx["title"] == "page"
 
@@ -211,7 +211,7 @@ def test_page_context_directory_with_children(tmp_path):
     node.index_path = None
 
     page = Node.__new__(Node)
-    page.type = "MARKDOWN"
+    page.type = "PAGE"
     page.name = "post.md"
     page.stem = "post"
     page.path = str(sub / "post.md")
@@ -297,8 +297,8 @@ def test_copy_bundled_theme_assets(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     assert (public / "styles.css").exists()
     # templates should NOT be copied
@@ -327,8 +327,8 @@ def test_render_basic_site(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     index = public / "index.html"
     assert index.exists()
@@ -353,8 +353,8 @@ def test_render_markdown_page(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     out = public / "about" / "index.html"
     assert out.exists()
@@ -380,8 +380,8 @@ def test_render_nested_markdown_page(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     out = public / "blog" / "post" / "index.html"
     assert out.exists()
@@ -408,8 +408,8 @@ def test_render_copies_images(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     # Image now lives in its pretty URL directory
     assert (public / "photos" / "a" / "a.jpg").exists()
@@ -429,8 +429,8 @@ def test_render_copies_static_assets(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     assert (public / "data.json").exists()
 
@@ -453,8 +453,8 @@ def test_render_directory_listing(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     dir_html = (public / "docs" / "index.html").read_text()
     assert "<h1>docs</h1>" in dir_html
@@ -479,8 +479,8 @@ def test_render_site_context(tmp_path):
         }
     )
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     html = (public / "index.html").read_text()
     assert "Test Site" in html
@@ -501,8 +501,8 @@ def test_render_generator_context(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     html = (public / "index.html").read_text()
     assert "Static Gallery" in html
@@ -518,8 +518,8 @@ def test_bundled_theme_has_generator_meta(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     html = (public / "index.html").read_text()
     assert '<meta name="generator"' in html
@@ -534,8 +534,8 @@ def test_bundled_theme_has_viewport_meta(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     html = (public / "index.html").read_text()
     assert '<meta name="viewport"' in html
@@ -549,8 +549,8 @@ def test_bundled_theme_uses_mdash_not_emdash(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     html = (public / "index.html").read_text()
     assert "&mdash;" in html
@@ -567,11 +567,11 @@ def test_bundled_gallery_uses_alt_text(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    gallery_node = root.dirs[0]
+    site = Scanner(config).scan(str(source))
+    gallery_node = site.root.dirs[0]
     gallery_node.images[0]._metadata = {"alt_text": "A sunset photo"}
 
-    Builder(config).render(root, str(source))
+    Builder(config).render(site)
 
     # Gallery page thumbnail
     gallery_html = (public / "photos" / "index.html").read_text()
@@ -592,11 +592,11 @@ def test_bundled_gallery_alt_falls_back_to_name(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    gallery_node = root.dirs[0]
+    site = Scanner(config).scan(str(source))
+    gallery_node = site.root.dirs[0]
     gallery_node.images[0]._metadata = {}
 
-    Builder(config).render(root, str(source))
+    Builder(config).render(site)
 
     html = (public / "photos" / "index.html").read_text()
     assert 'alt="a.jpg"' in html
@@ -612,11 +612,11 @@ def test_bundled_gallery_no_figcaption_without_metadata(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    gallery_node = root.dirs[0]
+    site = Scanner(config).scan(str(source))
+    gallery_node = site.root.dirs[0]
     gallery_node.images[0]._metadata = {}
 
-    Builder(config).render(root, str(source))
+    Builder(config).render(site)
 
     # Gallery page should not have figcaption
     gallery_html = (public / "photos" / "index.html").read_text()
@@ -643,10 +643,10 @@ def test_markdown_directory_collision(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
+    site = Scanner(config).scan(str(source))
 
     with pytest.raises(RuntimeError, match="blog/index.html"):
-        Builder(config).render(root, str(source))
+        Builder(config).render(site)
 
 
 def test_markdown_directory_static_collision(tmp_path):
@@ -666,10 +666,10 @@ def test_markdown_directory_static_collision(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
+    site = Scanner(config).scan(str(source))
 
     with pytest.raises(RuntimeError, match="archive/index.html"):
-        Builder(config).render(root, str(source))
+        Builder(config).render(site)
 
 
 def test_no_collision_normal_site(tmp_path):
@@ -690,8 +690,8 @@ def test_no_collision_normal_site(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     assert (public / "index.html").exists()
     assert (public / "about" / "index.html").exists()
@@ -751,8 +751,8 @@ def test_render_image_page(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     # Image page exists
     assert (public / "photos" / "a" / "index.html").exists()
@@ -789,8 +789,8 @@ def test_render_image_page_with_paired_markdown(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     img_html = (public / "photos" / "sunset" / "index.html").read_text()
     assert "<title>Golden Sunset</title>" in img_html
@@ -814,10 +814,10 @@ def test_render_image_page_with_metadata(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    root.dirs[0].images[0]._metadata = {"camera": "Nikon Z6"}
+    site = Scanner(config).scan(str(source))
+    site.root.dirs[0].images[0]._metadata = {"camera": "Nikon Z6"}
 
-    Builder(config).render(root, str(source))
+    Builder(config).render(site)
 
     img_html = (public / "photos" / "a" / "index.html").read_text()
     assert "Nikon Z6" in img_html
@@ -866,10 +866,10 @@ def test_image_stem_directory_collision(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
+    site = Scanner(config).scan(str(source))
 
     with pytest.raises(RuntimeError, match="sunset/index.html"):
-        Builder(config).render(root, str(source))
+        Builder(config).render(site)
 
 
 def test_render_public_defaults_to_public_dir(tmp_path):
@@ -881,14 +881,12 @@ def test_render_public_defaults_to_public_dir(tmp_path):
     theme.mkdir()
     (theme / "default.html").write_text("ok")
 
-    from static_gallery.scanner import Scanner
-
     old_cwd = os.getcwd()
     os.chdir(tmp_path)
     try:
         config = Config(cli_args={"theme_path": str(theme)})
-        root = Scanner(config).scan(str(source))
-        Builder(config).render(root, str(source))
+        site = Scanner(config).scan(str(source))
+        Builder(config).render(site)
         assert (tmp_path / "public" / "index.html").exists()
     finally:
         os.chdir(old_cwd)
@@ -915,8 +913,8 @@ def test_render_embed_image_shortcode(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     html = (public / "index.html").read_text()
     assert "<img" in html
@@ -937,8 +935,8 @@ def test_render_embed_code_shortcode(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     html = (public / "index.html").read_text()
     assert '<pre><code class="language-py">' in html
@@ -957,12 +955,12 @@ def test_render_gallery_shortcode(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    root.dirs[0].images[0]._metadata = {}
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    site.root.dirs[0].images[0]._metadata = {}
+    Builder(config).render(site)
 
     html = (public / "photos" / "index.html").read_text()
-    assert '<div class="gallery">' in html
+    assert 'class="gallery"' in html
     assert "a/a.jpg" in html
 
 
@@ -980,8 +978,8 @@ def test_render_link_embed_static_file(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     html = (public / "index.html").read_text()
     assert '<a href="data.csv">' in html
@@ -1008,8 +1006,8 @@ def test_render_cross_directory_embed(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     html = (public / "blog" / "post" / "index.html").read_text()
     assert "<img" in html
@@ -1037,9 +1035,9 @@ def test_render_shortcodes_in_paired_markdown(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    root.dirs[0].images[0]._metadata = {}
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    site.root.dirs[0].images[0]._metadata = {}
+    Builder(config).render(site)
 
     html = (public / "photos" / "sunset" / "index.html").read_text()
     assert "<title>Sunset</title>" in html
@@ -1060,8 +1058,8 @@ def test_render_no_shortcodes_unchanged(tmp_path):
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
-    root = Scanner(config).scan(str(source))
-    Builder(config).render(root, str(source))
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
 
     html = (public / "index.html").read_text()
     assert "No shortcodes here." in html

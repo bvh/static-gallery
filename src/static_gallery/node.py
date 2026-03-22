@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 class NodeType(StrEnum):
     HOME = "HOME"
     DIRECTORY = "DIRECTORY"
+    PAGE = "PAGE"
     GALLERY = "GALLERY"
-    MARKDOWN = "MARKDOWN"
     IMAGE = "IMAGE"
     STATIC = "STATIC"
 
@@ -61,7 +61,7 @@ class Node:
 
     def get_markdown_path(self):
         path = None
-        if self.type == NodeType.MARKDOWN:
+        if self.type == NodeType.PAGE:
             path = self.path
         elif self.type == NodeType.IMAGE:
             path = self.content_path
@@ -71,7 +71,7 @@ class Node:
 
     def add_child(self, node):
         match node.type:
-            case NodeType.MARKDOWN:
+            case NodeType.PAGE:
                 self.pages.append(node)
             case NodeType.IMAGE:
                 self.images.append(node)
@@ -109,7 +109,7 @@ class Node:
 
     @property
     def title_fallback(self):
-        if self.type in (NodeType.MARKDOWN, NodeType.IMAGE):
+        if self.type in (NodeType.PAGE, NodeType.IMAGE):
             return self.stem
         return self.name
 

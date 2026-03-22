@@ -1,23 +1,26 @@
 import os
 
+from static_gallery.index import SuffixIndex
 from static_gallery.node import Node, NodeType
+from static_gallery.site import Site
 
 
 class Scanner:
-    def __init__(self, config=None, index=None):
+    def __init__(self, config=None):
         self.config = config
-        self._index = index
 
     def scan(self, path):
-        root = Node(os.path.abspath(path), type=NodeType.HOME)
+        source_path = os.path.abspath(path)
+        self._index = SuffixIndex(source_path)
+        root = Node(source_path, type=NodeType.HOME)
         if root.is_dir():
             self._scan_directory(root)
         else:
             raise ValueError(f"Site path is not a directory: {root.path}.")
-        return root
+        return Site(root, source_path, self._index)
 
     def _add_to_index(self, node):
-        if self._index:
+        if self._index is not None:
             self._index.add(node)
 
     def _scan_directory(self, parent):
@@ -65,7 +68,7 @@ class Scanner:
                     child.type = NodeType.IMAGE
                     images.append(child)
                 elif child.is_markdown():
-                    child.type = NodeType.MARKDOWN
+                    child.type = NodeType.PAGE
                     markdowns.append(child)
                 else:
                     child.type = NodeType.STATIC
