@@ -5,14 +5,14 @@
         {%- if page.dirs -%}
         <ul class="dirs">
             {%- for dir in page.dirs -%}
-            <li><a href="{{ dir.url }}">{{ dir.name }}</a></li>
+            <li><a href="{{ dir.url }}">{{ dir.name | title }}</a></li>
             {%- endfor -%}
         </ul>
         {%- endif -%}
         {%- if page.pages -%}
         <ul class="pages">
             {%- for p in page.pages -%}
-            <li><a href="{{ p.url }}">{{ p.name }}</a></li>
+            <li><a href="{{ p.url }}">{{ p.name  | title }}</a></li>
             {%- endfor -%}
         </ul>
         {%- endif -%}
