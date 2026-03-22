@@ -1,5 +1,10 @@
+<!DOCTYPE html>
+<html lang="{{ site.language }}">
 {% include "blocks/head.html" %}
-{% include "blocks/header.html" %}
+<body>
+    <header>
+        <h1>{{ page.title | title }}</h1>
+    </header>
     <main>
         {{ page.content }}
         {%- if page.dirs -%}
@@ -18,3 +23,5 @@
         {%- endif -%}
     </main>
 {% include "blocks/footer.html" %}
+</body>
+</html>
