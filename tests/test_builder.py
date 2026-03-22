@@ -850,6 +850,36 @@ def test_page_context_images_have_url_and_src(tmp_path):
     assert ctx["images"][0].src == "a/a.jpg"
 
 
+def test_gallery_context_images_sorted_by_datetime(tmp_path):
+    """Gallery page context lists images in chronological order."""
+    config = Config()
+    r = Builder(config)
+    sub = tmp_path / "photos"
+    sub.mkdir()
+    node = Node(str(sub), type="GALLERY")
+    node.index_path = None
+
+    def _img(name, dt_str):
+        img = Node.__new__(Node)
+        img.type = "IMAGE"
+        img.name = name
+        img.stem = name.split(".")[0]
+        img.path = str(sub / name)
+        img._metadata = make_metadata(datetime=dt_str)
+        return img
+
+    img_c = _img("c.jpg", "2024:01:03 00:00:00")
+    img_a = _img("a.jpg", "2024:01:01 00:00:00")
+    img_b = _img("b.jpg", "2024:01:02 00:00:00")
+    node.images = [img_c, img_a, img_b]
+    node.pages = []
+    node.dirs = []
+
+    ctx = r._build_page_context(node)
+    names = [img.name for img in ctx["images"]]
+    assert names == ["a.jpg", "b.jpg", "c.jpg"]
+
+
 def test_image_stem_directory_collision(tmp_path):
     """sunset.jpg + sunset/ directory should collide on sunset/index.html."""
     source = tmp_path / "source"

@@ -287,26 +287,35 @@ def test_gallery_no_images():
     assert "<img" not in result
 
 
-def test_bare_gallery_preserves_order():
+def test_bare_gallery_sorts_by_datetime():
     root = make_node("/src", NodeType.HOME)
     gallery = make_node("/src/photos", NodeType.GALLERY)
     img_c = make_node(
-        "/src/photos/c.jpg", NodeType.IMAGE, suffix=".jpg", metadata=make_metadata()
+        "/src/photos/c.jpg",
+        NodeType.IMAGE,
+        suffix=".jpg",
+        metadata=make_metadata(datetime="2024:01:03 00:00:00"),
     )
     img_a = make_node(
-        "/src/photos/a.jpg", NodeType.IMAGE, suffix=".jpg", metadata=make_metadata()
+        "/src/photos/a.jpg",
+        NodeType.IMAGE,
+        suffix=".jpg",
+        metadata=make_metadata(datetime="2024:01:01 00:00:00"),
     )
     img_b = make_node(
-        "/src/photos/b.jpg", NodeType.IMAGE, suffix=".jpg", metadata=make_metadata()
+        "/src/photos/b.jpg",
+        NodeType.IMAGE,
+        suffix=".jpg",
+        metadata=make_metadata(datetime="2024:01:02 00:00:00"),
     )
     gallery.images = [img_c, img_a, img_b]
     root.dirs = [gallery]
     p = _make_processor(root)
     result = p.process("<<gallery>>", gallery)
-    pos_c = result.index("c/c.jpg")
     pos_a = result.index("a/a.jpg")
     pos_b = result.index("b/b.jpg")
-    assert pos_c < pos_a < pos_b
+    pos_c = result.index("c/c.jpg")
+    assert pos_a < pos_b < pos_c
 
 
 # --- Suffix-based embed routing ---

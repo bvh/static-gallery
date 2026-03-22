@@ -3,11 +3,13 @@ import importlib.resources
 import logging
 import os
 import shutil
+from datetime import datetime as dt
 
 from jinja2 import Environment, FileSystemLoader, PackageLoader
 from markupsafe import Markup
 
 from static_gallery.markdown import MarkdownRenderer
+
 from static_gallery.node import NodeType, build_image_data
 from static_gallery.shortcodes import ShortcodeProcessor
 
@@ -160,6 +162,17 @@ class Builder:
             target_output = self._get_output_path(target_node, self._source_path)
         return os.path.relpath(target_output, current_dir)
 
+    def _sorted_images(self, node):
+        if node.type != NodeType.GALLERY:
+            return node.images
+        return sorted(
+            node.images,
+            key=lambda img: (
+                img.metadata.datetime is None,
+                img.metadata.datetime or dt.min,
+            ),
+        )
+
     def _build_page_context(self, node):
         md_path = node.get_markdown_path()
         title = None
@@ -188,7 +201,7 @@ class Builder:
             ctx["image"] = image_data
         else:
             # Build image list with links to image pages
-            ctx["images"] = [build_image_data(img) for img in node.images]
+            ctx["images"] = [build_image_data(img) for img in self._sorted_images(node)]
 
         # Build page list
         pages = []

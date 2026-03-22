@@ -111,7 +111,7 @@ class ShortcodeProcessor:
                 img for img in images if fnmatch.fnmatch(img.name, filter_pattern)
             ]
 
-        sort_key = params.get("sort")
+        sort_key = params.get("sort", "datetime")
         if sort_key:
             images.sort(
                 key=lambda img: (
