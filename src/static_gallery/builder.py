@@ -182,10 +182,9 @@ class Builder:
         }
 
         if node.type == NodeType.IMAGE:
-            # Single image page context
-            image_data = dict(node.metadata)
-            image_data["name"] = node.name
-            image_data["url"] = node.name
+            # Single image page: url is the sibling file, not the page directory
+            image_data = build_image_data(node)
+            image_data.url = node.name
             ctx["image"] = image_data
         else:
             # Build image list with links to image pages

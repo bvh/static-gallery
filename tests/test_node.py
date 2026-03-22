@@ -237,22 +237,31 @@ class TestGetMarkdownPath:
 
 
 class TestMetadata:
-    def test_non_image_returns_empty(self, tmp_path):
+    def test_non_image_returns_empty_metadata(self, tmp_path):
+        from static_gallery.metadata import Metadata
+
         node = Node(str(tmp_path), type=NodeType.DIRECTORY)
-        assert node.metadata == {}
+        result = node.metadata
+        assert isinstance(result, Metadata)
+        assert result.camera is None
 
     def test_lazy_loading(self, tmp_path):
+        from static_gallery.metadata import Metadata
+
+        meta = Metadata()
         f = tmp_path / "photo.jpg"
         f.write_bytes(b"\x00")
         node = Node(str(f), type=NodeType.IMAGE)
-        with patch("static_gallery.node.read_metadata", return_value={"title": "T"}):
+        with patch("static_gallery.node.read_metadata", return_value=meta):
             result = node.metadata
-            assert result == {"title": "T"}
+            assert result is meta
             # Second access uses cached value
             result2 = node.metadata
             assert result2 is result
 
     def test_error_logs_warning(self, tmp_path, caplog):
+        from static_gallery.metadata import Metadata
+
         f = tmp_path / "bad.jpg"
         f.write_bytes(b"\x00")
         node = Node(str(f), type=NodeType.IMAGE)
@@ -263,7 +272,8 @@ class TestMetadata:
             caplog.at_level(logging.WARNING, logger="static_gallery.node"),
         ):
             result = node.metadata
-        assert result == {}
+        assert isinstance(result, Metadata)
+        assert result.camera is None
         assert "Failed to read metadata" in caplog.text
 
 

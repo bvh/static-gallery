@@ -1,10 +1,10 @@
+import os
 from datetime import datetime
 
 import pyexiv2
 import pytest
 
-from static_gallery.metadata import read_metadata
-from static_gallery.node import Node
+from static_gallery.metadata import Metadata, read_metadata
 
 # Minimal valid JPEG (SOI + APP0 + EOI)
 MINIMAL_JPEG = bytes(
@@ -75,110 +75,275 @@ def bare_image(tmp_path):
     return _make_jpeg(tmp_path, "bare.jpg")
 
 
-# --- read_metadata basic fields ---
+# --- Metadata class returns ---
 
 
-def test_read_metadata_title(fixture_image):
+def test_read_metadata_returns_metadata(fixture_image):
     meta = read_metadata(fixture_image)
-    assert meta["title"] == "Sunset Photo"
+    assert isinstance(meta, Metadata)
 
 
-def test_read_metadata_description(fixture_image):
+# --- Raw layers exist ---
+
+
+def test_raw_layers_exist(fixture_image):
     meta = read_metadata(fixture_image)
-    assert meta["description"] == "A beautiful sunset"
+    assert hasattr(meta, "file")
+    assert hasattr(meta, "exif")
+    assert hasattr(meta, "iptc")
+    assert hasattr(meta, "xmp")
 
 
-def test_read_metadata_artist(fixture_image):
+# --- Raw EXIF layer ---
+
+
+def test_raw_exif_camera(fixture_image):
     meta = read_metadata(fixture_image)
-    assert meta["artist"] == "Jane Doe"
+    assert meta.exif.camera == "EOS R5"
+    assert meta.exif.camera_make == "Canon"
 
 
-def test_read_metadata_copyright(fixture_image):
+def test_raw_exif_description(fixture_image):
     meta = read_metadata(fixture_image)
-    assert meta["copyright"] == "2024 Jane Doe"
+    assert meta.exif.description == "A beautiful sunset"
 
 
-def test_read_metadata_camera(fixture_image):
+def test_raw_exif_artist(fixture_image):
     meta = read_metadata(fixture_image)
-    assert meta["camera"] == "EOS R5"
-    assert meta["camera_make"] == "Canon"
+    assert meta.exif.artist == "Jane Doe"
 
 
-def test_read_metadata_datetime(fixture_image):
+def test_raw_exif_datetime(fixture_image):
     meta = read_metadata(fixture_image)
-    assert meta["datetime"] == datetime(2024, 6, 15, 18, 30, 0)
+    assert meta.exif.datetime == "2024:06:15 18:30:00"
 
 
-def test_read_metadata_exposure(fixture_image):
+def test_raw_exif_exposure(fixture_image):
     meta = read_metadata(fixture_image)
-    assert meta["shutter"] == "1/250"
-    assert meta["aperture"] == "f/2.8"
-    assert meta["iso"] == "400"
+    assert meta.exif.shutter_speed == "1/250"
+    assert meta.exif.aperture == "28/10"
+    assert meta.exif.iso == "400"
+    assert meta.exif.focal_length == "50/1"
+    assert meta.exif.focal_length_35 == "75"
 
 
-def test_read_metadata_focal_length(fixture_image):
+def test_raw_exif_lens(fixture_image):
     meta = read_metadata(fixture_image)
-    assert meta["focal_length"] == "50mm"
-    assert meta["focal_length_35"] == "75mm"
+    assert meta.exif.lens == "RF 50mm F1.2L USM"
+    assert meta.exif.lens_make == "Canon"
 
 
-def test_read_metadata_lens(fixture_image):
+def test_raw_exif_gps(fixture_image):
     meta = read_metadata(fixture_image)
-    assert meta["lens_model"] == "RF 50mm F1.2L USM"
-    assert meta["lens_make"] == "Canon"
+    assert meta.exif.latitude == "48/1 51/1 24/1"
+    assert meta.exif.latitude_ref == "N"
+    assert meta.exif.longitude == "2/1 21/1 3/1"
+    assert meta.exif.longitude_ref == "E"
 
 
-def test_read_metadata_gps(fixture_image):
+# --- Raw IPTC layer ---
+
+
+def test_raw_iptc_name(fixture_image):
     meta = read_metadata(fixture_image)
-    assert meta["gps_latitude"] == pytest.approx(48.856667, abs=0.001)
-    assert meta["gps_longitude"] == pytest.approx(2.350833, abs=0.001)
+    assert meta.iptc.name == "Sunset Photo"
 
 
-def test_read_metadata_location(fixture_image):
+def test_raw_iptc_location(fixture_image):
     meta = read_metadata(fixture_image)
-    assert meta["country_code"] == "FR"
-    assert meta["country"] == "France"
-    assert meta["province_state"] == "Île-de-France"
-    assert meta["city"] == "Paris"
-    assert meta["location"] == "Eiffel Tower"
+    assert meta.iptc.country_code == "FR"
+    assert meta.iptc.country == "France"
+    assert meta.iptc.province_state == "Île-de-France"
+    assert meta.iptc.city == "Paris"
+    assert meta.iptc.sublocation == "Eiffel Tower"
 
 
-def test_read_metadata_keywords(fixture_image):
+def test_raw_iptc_keywords(fixture_image):
     meta = read_metadata(fixture_image)
-    assert meta["keywords"] == ["sunset", "landscape", "nature"]
+    assert meta.iptc.keywords == ["sunset", "landscape", "nature"]
 
 
-def test_read_metadata_rating(fixture_image):
+# --- Raw XMP layer ---
+
+
+def test_raw_xmp_rating(fixture_image):
     meta = read_metadata(fixture_image)
-    assert meta["rating"] == "5"
+    assert meta.xmp.rating == "5"
 
 
-def test_read_metadata_aliases(fixture_image):
+# --- Raw file layer ---
+
+
+def test_raw_file_name(fixture_image):
     meta = read_metadata(fixture_image)
-    assert meta["state"] == meta["province_state"]
-    assert meta["province"] == meta["province_state"]
+    assert meta.file.name == "photo"
 
 
-# --- bare image returns Nones ---
+def test_raw_file_type(fixture_image):
+    meta = read_metadata(fixture_image)
+    assert meta.file.type == "image/jpeg"
 
 
-def test_read_metadata_bare_image(bare_image):
+def test_raw_file_timestamps(fixture_image):
+    meta = read_metadata(fixture_image)
+    stat = os.stat(fixture_image)
+    assert meta.file.mtime == stat.st_mtime
+    assert meta.file.ctime == stat.st_ctime
+
+
+def test_raw_file_dimensions(fixture_image):
+    meta = read_metadata(fixture_image)
+    # Minimal JPEG may have 0 or 1 pixel dimensions
+    assert isinstance(meta.file.width, int)
+    assert isinstance(meta.file.height, int)
+
+
+# --- Derived properties: basic fields ---
+
+
+def test_derived_title(fixture_image):
+    meta = read_metadata(fixture_image)
+    assert meta.title == "Sunset Photo"
+
+
+def test_derived_description(fixture_image):
+    meta = read_metadata(fixture_image)
+    assert meta.description == "A beautiful sunset"
+
+
+def test_derived_artist(fixture_image):
+    meta = read_metadata(fixture_image)
+    assert meta.artist == "Jane Doe"
+
+
+def test_derived_copyright(fixture_image):
+    meta = read_metadata(fixture_image)
+    assert meta.copyright == "2024 Jane Doe"
+
+
+def test_derived_camera(fixture_image):
+    meta = read_metadata(fixture_image)
+    assert meta.camera == "EOS R5"
+
+
+def test_derived_datetime(fixture_image):
+    meta = read_metadata(fixture_image)
+    assert meta.datetime == datetime(2024, 6, 15, 18, 30, 0)
+
+
+def test_derived_exposure_fields(fixture_image):
+    meta = read_metadata(fixture_image)
+    assert meta.shutter == "1/250"
+    assert meta.aperture == "f/2.8"
+    assert meta.iso == "400"
+    assert meta.focal_length == "50mm"
+    assert meta.focal_length_35 == "75mm"
+
+
+def test_derived_exposure_string(fixture_image):
+    meta = read_metadata(fixture_image)
+    assert meta.exposure == "1/250 f/2.8 ISO400 75mm"
+
+
+def test_derived_lens(fixture_image):
+    meta = read_metadata(fixture_image)
+    assert meta.lens == "RF 50mm F1.2L USM"
+    assert meta.lens_make == "Canon"
+
+
+def test_derived_gps(fixture_image):
+    meta = read_metadata(fixture_image)
+    assert meta.latitude == pytest.approx(48.856667, abs=0.001)
+    assert meta.longitude == pytest.approx(2.350833, abs=0.001)
+
+
+def test_derived_location_fields(fixture_image):
+    meta = read_metadata(fixture_image)
+    assert meta.sublocation == "Eiffel Tower"
+    assert meta.city == "Paris"
+    assert meta.province_state == "Île-de-France"
+    assert meta.state == "Île-de-France"
+    assert meta.province == "Île-de-France"
+    assert meta.country == "France"
+
+
+def test_derived_location_composite(fixture_image):
+    meta = read_metadata(fixture_image)
+    assert meta.location == "Eiffel Tower, Paris, Île-de-France, France"
+
+
+def test_derived_keywords(fixture_image):
+    meta = read_metadata(fixture_image)
+    assert meta.keywords == ["sunset", "landscape", "nature"]
+
+
+def test_derived_rating(fixture_image):
+    meta = read_metadata(fixture_image)
+    assert meta.rating == 5
+
+
+# --- Bare image: defaults and fallbacks ---
+
+
+def test_bare_title_falls_back_to_filename(bare_image):
     meta = read_metadata(bare_image)
-    assert meta["title"] is None
-    assert meta["description"] is None
-    assert meta["camera"] is None
-    assert meta["datetime"] is None
-    assert meta["gps_latitude"] is None
-    assert meta["keywords"] is None
+    assert meta.title == "bare"
 
 
-# --- fallback chains ---
+def test_bare_description_is_none(bare_image):
+    meta = read_metadata(bare_image)
+    assert meta.description is None
+
+
+def test_bare_alt_text_falls_back_to_title(bare_image):
+    meta = read_metadata(bare_image)
+    assert meta.alt_text == "bare"
+
+
+def test_bare_datetime_falls_back_to_ctime(bare_image):
+    meta = read_metadata(bare_image)
+    assert isinstance(meta.datetime, datetime)
+    stat = os.stat(bare_image)
+    assert meta.datetime == datetime.fromtimestamp(stat.st_ctime)
+
+
+def test_bare_camera_is_none(bare_image):
+    meta = read_metadata(bare_image)
+    assert meta.camera is None
+
+
+def test_bare_keywords_default_empty_list(bare_image):
+    meta = read_metadata(bare_image)
+    assert meta.keywords == []
+
+
+def test_bare_rating_default_zero(bare_image):
+    meta = read_metadata(bare_image)
+    assert meta.rating == 0
+
+
+def test_bare_location_is_none(bare_image):
+    meta = read_metadata(bare_image)
+    assert meta.location is None
+
+
+def test_bare_exposure_is_none(bare_image):
+    meta = read_metadata(bare_image)
+    assert meta.exposure is None
+
+
+def test_bare_latitude_is_none(bare_image):
+    meta = read_metadata(bare_image)
+    assert meta.latitude is None
+
+
+# --- Fallback chains ---
 
 
 def test_alt_text_falls_back_to_description(fixture_image):
-    """alt_text should fall back to description when Xmp.iptcExt.AltTextAccessibility is absent."""
+    """alt_text should fall back to description when XMP alt text is absent."""
     meta = read_metadata(fixture_image)
-    assert meta["alt_text"] == "A beautiful sunset"
+    assert meta.alt_text == "A beautiful sunset"
 
 
 def test_alt_text_falls_back_to_title(tmp_path):
@@ -188,17 +353,17 @@ def test_alt_text_falls_back_to_title(tmp_path):
     img.modify_iptc({"Iptc.Application2.ObjectName": "My Title Only"})
     img.close()
     meta = read_metadata(path)
-    assert meta["alt_text"] == "My Title Only"
+    assert meta.alt_text == "My Title Only"
 
 
 def test_description_iptc_fallback(tmp_path):
-    """description falls back to Iptc.Application2.Caption."""
+    """description falls back to IPTC caption."""
     path = _make_jpeg(tmp_path, "captioned.jpg")
     img = pyexiv2.Image(path)
     img.modify_iptc({"Iptc.Application2.Caption": "IPTC caption text"})
     img.close()
     meta = read_metadata(path)
-    assert meta["description"] == "IPTC caption text"
+    assert meta.description == "IPTC caption text"
 
 
 def test_datetime_iptc_fallback(tmp_path):
@@ -213,10 +378,20 @@ def test_datetime_iptc_fallback(tmp_path):
     )
     img.close()
     meta = read_metadata(path)
-    assert meta["datetime"] == datetime(2024, 6, 15, 18, 30, 0)
+    assert meta.datetime == datetime(2024, 6, 15, 18, 30, 0)
 
 
-# --- shutter speed formatting ---
+def test_keywords_xmp_fallback(tmp_path):
+    """keywords falls back to XMP subject when IPTC keywords are absent."""
+    path = _make_jpeg(tmp_path, "xmp_kw.jpg")
+    img = pyexiv2.Image(path)
+    img.modify_xmp({"Xmp.dc.subject": ["travel", "urban"]})
+    img.close()
+    meta = read_metadata(path)
+    assert meta.keywords == ["travel", "urban"]
+
+
+# --- Shutter speed formatting ---
 
 
 def test_shutter_speed_long_exposure_integer(tmp_path):
@@ -226,7 +401,7 @@ def test_shutter_speed_long_exposure_integer(tmp_path):
     img.modify_exif({"Exif.Photo.ExposureTime": "30/1"})
     img.close()
     meta = read_metadata(path)
-    assert meta["shutter"] == "30s"
+    assert meta.shutter == "30s"
 
 
 def test_shutter_speed_long_exposure_fractional(tmp_path):
@@ -236,20 +411,7 @@ def test_shutter_speed_long_exposure_fractional(tmp_path):
     img.modify_exif({"Exif.Photo.ExposureTime": "15/10"})
     img.close()
     meta = read_metadata(path)
-    assert meta["shutter"] == "1.5s"
-
-
-# --- XMP keywords fallback ---
-
-
-def test_keywords_xmp_fallback(tmp_path):
-    """keywords falls back to Xmp.dc.subject when IPTC keywords are absent."""
-    path = _make_jpeg(tmp_path, "xmp_kw.jpg")
-    img = pyexiv2.Image(path)
-    img.modify_xmp({"Xmp.dc.subject": ["travel", "urban"]})
-    img.close()
-    meta = read_metadata(path)
-    assert meta["keywords"] == ["travel", "urban"]
+    assert meta.shutter == "1.5s"
 
 
 # --- GPS sign for S/W ---
@@ -269,40 +431,52 @@ def test_gps_south_west(tmp_path):
     )
     img.close()
     meta = read_metadata(path)
-    assert meta["gps_latitude"] < 0
-    assert meta["gps_longitude"] < 0
+    assert meta.latitude < 0
+    assert meta.longitude < 0
 
 
-# --- Node.metadata lazy property ---
+# --- Location composite partial ---
 
 
-def test_node_metadata_lazy(fixture_image):
-    """IMAGE node should lazily load metadata on first access."""
-    node = Node(fixture_image, type="IMAGE")
-    # _metadata sentinel should not exist yet
-    assert not hasattr(node, "_metadata") or node._metadata is None
-    meta = node.metadata
-    assert meta["title"] == "Sunset Photo"
-    # Second access returns same dict (cached)
-    assert node.metadata is meta
+def test_location_partial(tmp_path):
+    """Location composite should join only non-None parts."""
+    path = _make_jpeg(tmp_path, "partial_loc.jpg")
+    img = pyexiv2.Image(path)
+    img.modify_iptc(
+        {
+            "Iptc.Application2.City": "Tokyo",
+            "Iptc.Application2.CountryName": "Japan",
+        }
+    )
+    img.close()
+    meta = read_metadata(path)
+    assert meta.location == "Tokyo, Japan"
 
 
-def test_node_metadata_non_image(tmp_path):
-    """Non-IMAGE nodes return empty dict."""
-    sub = tmp_path / "dir"
-    sub.mkdir()
-    node = Node(str(sub), type="DIRECTORY")
-    assert node.metadata == {}
+# --- Exposure partial ---
 
 
-def test_node_metadata_error_returns_nones(tmp_path):
-    """If metadata reading fails, return dict with all None values."""
-    path = tmp_path / "nonexistent.jpg"
-    node = Node.__new__(Node)
-    node.type = "IMAGE"
-    node.path = str(path)
-    node._metadata = None
-    meta = node.metadata
-    assert meta["title"] is None
-    assert meta["camera"] is None
-    assert meta["keywords"] is None
+def test_exposure_partial(tmp_path):
+    """Exposure string with only some components present."""
+    path = _make_jpeg(tmp_path, "partial_exp.jpg")
+    img = pyexiv2.Image(path)
+    img.modify_exif(
+        {
+            "Exif.Photo.ExposureTime": "1/125",
+            "Exif.Photo.FNumber": "4/1",
+        }
+    )
+    img.close()
+    meta = read_metadata(path)
+    assert meta.exposure == "1/125 f/4"
+
+
+# --- Error handling ---
+
+
+def test_read_metadata_nonexistent_file(tmp_path):
+    """read_metadata on a nonexistent file returns Metadata with None raw fields."""
+    meta = read_metadata(str(tmp_path / "nonexistent.jpg"))
+    assert isinstance(meta, Metadata)
+    assert meta.title == "nonexistent"
+    assert meta.camera is None

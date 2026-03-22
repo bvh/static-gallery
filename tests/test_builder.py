@@ -5,9 +5,11 @@ import pytest
 from static_gallery.builder import Builder
 from static_gallery.config import Config
 from static_gallery.index import SuffixIndex
+from static_gallery.metadata import Metadata
 from static_gallery.node import Node
 from static_gallery.scanner import Scanner
 from static_gallery.shortcodes import ShortcodeProcessor
+from tests.helpers import make_metadata
 
 
 def _make_home(tmp_path, index_text=None):
@@ -197,9 +199,9 @@ def test_page_context_directory_no_markdown(tmp_path):
     assert ctx["title"] == "photos"
     assert ctx["content"] == ""
     assert len(ctx["images"]) == 1
-    assert ctx["images"][0]["name"] == "a.jpg"
-    assert ctx["images"][0]["url"] == "a/"
-    assert ctx["images"][0]["src"] == "a/a.jpg"
+    assert ctx["images"][0].name == "a.jpg"
+    assert ctx["images"][0].url == "a/"
+    assert ctx["images"][0].src == "a/a.jpg"
 
 
 def test_page_context_directory_with_children(tmp_path):
@@ -569,7 +571,7 @@ def test_bundled_gallery_uses_alt_text(tmp_path):
 
     site = Scanner(config).scan(str(source))
     gallery_node = site.root.dirs[0]
-    gallery_node.images[0]._metadata = {"alt_text": "A sunset photo"}
+    gallery_node.images[0]._metadata = make_metadata(alt_text="A sunset photo")
 
     Builder(config).render(site)
 
@@ -594,7 +596,7 @@ def test_bundled_gallery_alt_falls_back_to_name(tmp_path):
 
     site = Scanner(config).scan(str(source))
     gallery_node = site.root.dirs[0]
-    gallery_node.images[0]._metadata = {}
+    gallery_node.images[0]._metadata = Metadata()
 
     Builder(config).render(site)
 
@@ -614,7 +616,7 @@ def test_bundled_gallery_no_figcaption_without_metadata(tmp_path):
 
     site = Scanner(config).scan(str(source))
     gallery_node = site.root.dirs[0]
-    gallery_node.images[0]._metadata = {}
+    gallery_node.images[0]._metadata = Metadata()
 
     Builder(config).render(site)
 
@@ -815,7 +817,7 @@ def test_render_image_page_with_metadata(tmp_path):
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
     site = Scanner(config).scan(str(source))
-    site.root.dirs[0].images[0]._metadata = {"camera": "Nikon Z6"}
+    site.root.dirs[0].images[0]._metadata = make_metadata(camera="Nikon Z6")
 
     Builder(config).render(site)
 
@@ -844,8 +846,8 @@ def test_page_context_images_have_url_and_src(tmp_path):
     node.dirs = []
 
     ctx = r._build_page_context(node)
-    assert ctx["images"][0]["url"] == "a/"
-    assert ctx["images"][0]["src"] == "a/a.jpg"
+    assert ctx["images"][0].url == "a/"
+    assert ctx["images"][0].src == "a/a.jpg"
 
 
 def test_image_stem_directory_collision(tmp_path):
@@ -956,7 +958,7 @@ def test_render_gallery_shortcode(tmp_path):
     config = Config(cli_args={"public_path": str(public)})
 
     site = Scanner(config).scan(str(source))
-    site.root.dirs[0].images[0]._metadata = {}
+    site.root.dirs[0].images[0]._metadata = Metadata()
     Builder(config).render(site)
 
     html = (public / "photos" / "index.html").read_text()
@@ -1036,7 +1038,7 @@ def test_render_shortcodes_in_paired_markdown(tmp_path):
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
 
     site = Scanner(config).scan(str(source))
-    site.root.dirs[0].images[0]._metadata = {}
+    site.root.dirs[0].images[0]._metadata = Metadata()
     Builder(config).render(site)
 
     html = (public / "photos" / "sunset" / "index.html").read_text()

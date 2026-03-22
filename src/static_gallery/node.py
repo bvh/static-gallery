@@ -2,8 +2,9 @@ import json
 import logging
 import os
 from enum import StrEnum
+from types import SimpleNamespace
 
-from static_gallery.metadata import read_metadata
+from static_gallery.metadata import DERIVED_FIELDS, Metadata, read_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +87,7 @@ class Node:
     @property
     def metadata(self):
         if self.type != NodeType.IMAGE:
-            return {}
+            return Metadata()
         if self._metadata is None:
             try:
                 self._metadata = read_metadata(self.path)
@@ -94,7 +95,7 @@ class Node:
                 logger.warning(
                     "Failed to read metadata from %s", self.path, exc_info=True
                 )
-                self._metadata = {}
+                self._metadata = Metadata()
         return self._metadata
 
     @property
@@ -159,8 +160,13 @@ class Node:
 
 
 def build_image_data(img):
-    data = dict(img.metadata)
-    data["name"] = img.name
-    data["url"] = img.stem + "/"
-    data["src"] = img.stem + "/" + img.name
+    m = img.metadata
+    data = SimpleNamespace(
+        name=img.name,
+        url=img.stem + "/",
+        src=img.stem + "/" + img.name,
+        metadata=m,
+    )
+    for attr in DERIVED_FIELDS:
+        setattr(data, attr, getattr(m, attr))
     return data

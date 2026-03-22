@@ -115,8 +115,8 @@ class ShortcodeProcessor:
         if sort_key:
             images.sort(
                 key=lambda img: (
-                    sort_key not in img.metadata,
-                    img.metadata.get(sort_key, ""),
+                    getattr(img.metadata, sort_key, None) is None,
+                    getattr(img.metadata, sort_key, "") or "",
                 )
             )
 

@@ -1,7 +1,7 @@
 import pytest
 from jinja2 import DictLoader, Environment
 
-from tests.helpers import make_node
+from tests.helpers import make_metadata, make_node
 from static_gallery.index import SuffixIndex
 from static_gallery.node import NodeType
 from static_gallery.shortcodes import ShortcodeProcessor
@@ -154,7 +154,9 @@ def test_embed_unknown_file_produces_link(tmp_path):
 def test_gallery_shortcode_renders():
     root = make_node("/src", NodeType.HOME)
     gallery = make_node("/src/photos", NodeType.GALLERY)
-    img = make_node("/src/photos/a.jpg", NodeType.IMAGE, suffix=".jpg", metadata={})
+    img = make_node(
+        "/src/photos/a.jpg", NodeType.IMAGE, suffix=".jpg", metadata=make_metadata()
+    )
     gallery.images = [img]
     root.dirs = [gallery]
     p = _make_processor(root)
@@ -166,8 +168,12 @@ def test_gallery_shortcode_renders():
 def test_gallery_shortcode_filter():
     root = make_node("/src", NodeType.HOME)
     gallery = make_node("/src/photos", NodeType.GALLERY)
-    jpg = make_node("/src/photos/a.jpg", NodeType.IMAGE, suffix=".jpg", metadata={})
-    png = make_node("/src/photos/b.png", NodeType.IMAGE, suffix=".png", metadata={})
+    jpg = make_node(
+        "/src/photos/a.jpg", NodeType.IMAGE, suffix=".jpg", metadata=make_metadata()
+    )
+    png = make_node(
+        "/src/photos/b.png", NodeType.IMAGE, suffix=".png", metadata=make_metadata()
+    )
     gallery.images = [jpg, png]
     root.dirs = [gallery]
     p = _make_processor(root)
@@ -183,13 +189,13 @@ def test_gallery_shortcode_sort():
         "/src/photos/a.jpg",
         NodeType.IMAGE,
         suffix=".jpg",
-        metadata={"datetime": "2024-01-02"},
+        metadata=make_metadata(datetime="2024:01:02 00:00:00"),
     )
     img_b = make_node(
         "/src/photos/b.jpg",
         NodeType.IMAGE,
         suffix=".jpg",
-        metadata={"datetime": "2024-01-01"},
+        metadata=make_metadata(datetime="2024:01:01 00:00:00"),
     )
     gallery.images = [img_a, img_b]
     root.dirs = [gallery]
@@ -207,13 +213,13 @@ def test_gallery_shortcode_reverse():
         "/src/photos/a.jpg",
         NodeType.IMAGE,
         suffix=".jpg",
-        metadata={"datetime": "2024-01-01"},
+        metadata=make_metadata(datetime="2024:01:01 00:00:00"),
     )
     img_b = make_node(
         "/src/photos/b.jpg",
         NodeType.IMAGE,
         suffix=".jpg",
-        metadata={"datetime": "2024-01-02"},
+        metadata=make_metadata(datetime="2024:01:02 00:00:00"),
     )
     gallery.images = [img_a, img_b]
     root.dirs = [gallery]
@@ -231,13 +237,13 @@ def test_gallery_missing_sort_key_sorts_last():
         "/src/photos/a.jpg",
         NodeType.IMAGE,
         suffix=".jpg",
-        metadata={"datetime": "2024-01-01"},
+        metadata=make_metadata(datetime="2024:01:01 00:00:00"),
     )
     img_b = make_node(
         "/src/photos/b.jpg",
         NodeType.IMAGE,
         suffix=".jpg",
-        metadata={},
+        metadata=make_metadata(),
     )
     gallery.images = [img_b, img_a]
     root.dirs = [gallery]
@@ -284,9 +290,15 @@ def test_gallery_no_images():
 def test_bare_gallery_preserves_order():
     root = make_node("/src", NodeType.HOME)
     gallery = make_node("/src/photos", NodeType.GALLERY)
-    img_c = make_node("/src/photos/c.jpg", NodeType.IMAGE, suffix=".jpg", metadata={})
-    img_a = make_node("/src/photos/a.jpg", NodeType.IMAGE, suffix=".jpg", metadata={})
-    img_b = make_node("/src/photos/b.jpg", NodeType.IMAGE, suffix=".jpg", metadata={})
+    img_c = make_node(
+        "/src/photos/c.jpg", NodeType.IMAGE, suffix=".jpg", metadata=make_metadata()
+    )
+    img_a = make_node(
+        "/src/photos/a.jpg", NodeType.IMAGE, suffix=".jpg", metadata=make_metadata()
+    )
+    img_b = make_node(
+        "/src/photos/b.jpg", NodeType.IMAGE, suffix=".jpg", metadata=make_metadata()
+    )
     gallery.images = [img_c, img_a, img_b]
     root.dirs = [gallery]
     p = _make_processor(root)
@@ -315,7 +327,9 @@ def test_suffix_embed_resolves():
 def test_named_shortcode_unaffected():
     root = make_node("/src", NodeType.HOME)
     gallery = make_node("/src/photos", NodeType.GALLERY)
-    img = make_node("/src/photos/a.jpg", NodeType.IMAGE, suffix=".jpg", metadata={})
+    img = make_node(
+        "/src/photos/a.jpg", NodeType.IMAGE, suffix=".jpg", metadata=make_metadata()
+    )
     gallery.images = [img]
     root.dirs = [gallery]
     p = _make_processor(root)

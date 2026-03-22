@@ -5,7 +5,7 @@
         {%- if page.image -%}
         <figure>
             <a href="{{ page.image.url }}"><img src="{{ page.image.url }}" alt="{{ page.image.alt_text or page.image.name }}" class="full"></a>
-            {%- if page.image.title or page.image.description or page.image.camera or page.image.location or page.image.city or page.image.country -%}
+            {%- if page.image.title or page.image.description or page.image.camera or page.image.location -%}
             <figcaption>
                 {%- if page.image.title -%}
                 <strong>{{ page.image.title }}</strong>
@@ -25,14 +25,8 @@
                     {%- if page.image.iso -%}<li>ISO {{ page.image.iso }}</li>{%- endif -%}
                 </ul>
                 {%- endif -%}
-                {%- if page.image.location or page.image.city or page.image.country -%}
-                <p class="location">
-                    {%- set parts = [] -%}
-                    {%- if page.image.location -%}{%- if parts.append(page.image.location) -%}{%- endif -%}{%- endif -%}
-                    {%- if page.image.city -%}{%- if parts.append(page.image.city) -%}{%- endif -%}{%- endif -%}
-                    {%- if page.image.country -%}{%- if parts.append(page.image.country) -%}{%- endif -%}{%- endif -%}
-                    {{ parts | join(", ") }}
-                </p>
+                {%- if page.image.location -%}
+                <p class="location">{{ page.image.location }}</p>
                 {%- endif -%}
             </figcaption>
             {%- endif -%}

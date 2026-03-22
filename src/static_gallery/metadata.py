@@ -1,41 +1,14 @@
 import logging
+import mimetypes
+import os
 import re
 from datetime import datetime
 from fractions import Fraction
+from types import SimpleNamespace
 
 import pyexiv2
 
 logger = logging.getLogger(__name__)
-
-FIELDS = (
-    "title",
-    "description",
-    "alt_text",
-    "artist",
-    "copyright",
-    "datetime",
-    "shutter",
-    "aperture",
-    "iso",
-    "focal_length",
-    "focal_length_35",
-    "camera",
-    "camera_make",
-    "lens",
-    "lens_model",
-    "lens_make",
-    "country_code",
-    "country",
-    "province_state",
-    "city",
-    "location",
-    "gps_latitude",
-    "gps_longitude",
-    "keywords",
-    "rating",
-    "state",
-    "province",
-)
 
 
 def _get(data, key, default=None):
@@ -144,101 +117,347 @@ def _format_focal_length(value):
         return value
 
 
+def _build_file_layer(path):
+    """Build the file metadata layer from path and optional pyexiv2 image."""
+    stem = os.path.splitext(os.path.basename(path))[0]
+    mime_type = mimetypes.guess_type(path)[0]
+    try:
+        stat = os.stat(path)
+        mtime = stat.st_mtime
+        ctime = stat.st_ctime
+    except OSError:
+        mtime = None
+        ctime = None
+
+    width = None
+    height = None
+
+    return SimpleNamespace(
+        name=stem,
+        type=mime_type,
+        width=width,
+        height=height,
+        mtime=mtime,
+        ctime=ctime,
+    )
+
+
+def _build_exif_layer(exif):
+    """Build the raw EXIF metadata layer."""
+    return SimpleNamespace(
+        description=_get(exif, "Exif.Image.ImageDescription"),
+        artist=_get(exif, "Exif.Image.Artist"),
+        datetime=_get(exif, "Exif.Photo.DateTimeOriginal"),
+        copyright=_get(exif, "Exif.Image.Copyright"),
+        shutter_speed=_get(exif, "Exif.Photo.ExposureTime")
+        or _get(exif, "Exif.Photo.ShutterSpeedValue"),
+        aperture=_get(exif, "Exif.Photo.FNumber")
+        or _get(exif, "Exif.Photo.ApertureValue"),
+        iso=_get(exif, "Exif.Photo.ISOSpeedRatings"),
+        focal_length=_get(exif, "Exif.Photo.FocalLength"),
+        focal_length_35=_get(exif, "Exif.Photo.FocalLengthIn35mmFilm"),
+        camera=_get(exif, "Exif.Image.Model"),
+        camera_make=_get(exif, "Exif.Image.Make"),
+        lens_info=_get(exif, "Exif.Photo.LensSpecification"),
+        lens=_get(exif, "Exif.Photo.LensModel"),
+        lens_make=_get(exif, "Exif.Photo.LensMake"),
+        latitude=_get(exif, "Exif.GPSInfo.GPSLatitude"),
+        latitude_ref=_get(exif, "Exif.GPSInfo.GPSLatitudeRef"),
+        longitude=_get(exif, "Exif.GPSInfo.GPSLongitude"),
+        longitude_ref=_get(exif, "Exif.GPSInfo.GPSLongitudeRef"),
+    )
+
+
+def _build_iptc_layer(iptc):
+    """Build the raw IPTC metadata layer."""
+    return SimpleNamespace(
+        name=_get(iptc, "Iptc.Application2.ObjectName"),
+        caption=_get(iptc, "Iptc.Application2.Caption"),
+        byline=_get(iptc, "Iptc.Application2.Byline"),
+        date=_get(iptc, "Iptc.Application2.DateCreated"),
+        time=_get(iptc, "Iptc.Application2.TimeCreated"),
+        copyright=_get(iptc, "Iptc.Application2.Copyright"),
+        country_code=_get(iptc, "Iptc.Application2.CountryCode"),
+        country=_get(iptc, "Iptc.Application2.CountryName"),
+        province_state=_get(iptc, "Iptc.Application2.ProvinceState"),
+        city=_get(iptc, "Iptc.Application2.City"),
+        sublocation=_get(iptc, "Iptc.Application2.SubLocation"),
+        keywords=_get(iptc, "Iptc.Application2.Keywords"),
+    )
+
+
+def _build_xmp_layer(xmp):
+    """Build the raw XMP metadata layer."""
+    return SimpleNamespace(
+        alt_text=_get(xmp, "Xmp.iptcExt.AltTextAccessibility"),
+        subject=_get(xmp, "Xmp.dc.subject"),
+        rating=_get(xmp, "Xmp.xmp.Rating"),
+    )
+
+
+def _empty_namespace(fields):
+    """Create a SimpleNamespace with all given field names set to None."""
+    return SimpleNamespace(**{f: None for f in fields})
+
+
+_EXIF_FIELDS = (
+    "description",
+    "artist",
+    "datetime",
+    "copyright",
+    "shutter_speed",
+    "aperture",
+    "iso",
+    "focal_length",
+    "focal_length_35",
+    "camera",
+    "camera_make",
+    "lens_info",
+    "lens",
+    "lens_make",
+    "latitude",
+    "latitude_ref",
+    "longitude",
+    "longitude_ref",
+)
+
+_IPTC_FIELDS = (
+    "name",
+    "caption",
+    "byline",
+    "date",
+    "time",
+    "copyright",
+    "country_code",
+    "country",
+    "province_state",
+    "city",
+    "sublocation",
+    "keywords",
+)
+
+_XMP_FIELDS = ("alt_text", "subject", "rating")
+
+_FILE_FIELDS = ("name", "type", "width", "height", "mtime", "ctime")
+
+
+DERIVED_FIELDS = (
+    "title",
+    "description",
+    "alt_text",
+    "artist",
+    "copyright",
+    "datetime",
+    "camera",
+    "camera_make",
+    "lens",
+    "lens_info",
+    "lens_make",
+    "shutter",
+    "aperture",
+    "iso",
+    "focal_length",
+    "focal_length_35",
+    "exposure",
+    "sublocation",
+    "city",
+    "province_state",
+    "state",
+    "province",
+    "country",
+    "country_code",
+    "location",
+    "latitude",
+    "longitude",
+    "keywords",
+    "rating",
+)
+
+
+class Metadata:
+    """Structured image metadata with raw layers and derived properties."""
+
+    def __init__(self, file=None, exif=None, iptc=None, xmp=None):
+        self.file = file or _empty_namespace(_FILE_FIELDS)
+        self.exif = exif or _empty_namespace(_EXIF_FIELDS)
+        self.iptc = iptc or _empty_namespace(_IPTC_FIELDS)
+        self.xmp = xmp or _empty_namespace(_XMP_FIELDS)
+
+    # --- Derived properties ---
+
+    @property
+    def title(self):
+        return self.iptc.name or self.file.name
+
+    @property
+    def description(self):
+        return self.exif.description or self.iptc.caption
+
+    @property
+    def alt_text(self):
+        return self.xmp.alt_text or self.description or self.title
+
+    @property
+    def artist(self):
+        return self.exif.artist or self.iptc.byline
+
+    @property
+    def copyright(self):
+        return self.exif.copyright or self.iptc.copyright
+
+    @property
+    def datetime(self):
+        dt = _parse_exif_datetime(self.exif.datetime)
+        if dt is None:
+            dt = _parse_iptc_datetime(self.iptc.date, self.iptc.time)
+        if dt is None and self.file.ctime is not None:
+            dt = datetime.fromtimestamp(self.file.ctime)
+        return dt
+
+    @property
+    def camera(self):
+        return self.exif.camera
+
+    @property
+    def camera_make(self):
+        return self.exif.camera_make
+
+    @property
+    def lens(self):
+        return self.exif.lens
+
+    @property
+    def lens_info(self):
+        return self.exif.lens_info
+
+    @property
+    def lens_make(self):
+        return self.exif.lens_make
+
+    @property
+    def shutter(self):
+        return _format_shutter(self.exif.shutter_speed)
+
+    @property
+    def aperture(self):
+        return _format_aperture(self.exif.aperture)
+
+    @property
+    def iso(self):
+        return self.exif.iso
+
+    @property
+    def focal_length(self):
+        return _format_focal_length(self.exif.focal_length)
+
+    @property
+    def focal_length_35(self):
+        return _format_focal_length(self.exif.focal_length_35)
+
+    @property
+    def exposure(self):
+        parts = []
+        if self.shutter:
+            parts.append(self.shutter)
+        if self.aperture:
+            parts.append(self.aperture)
+        if self.iso:
+            parts.append(f"ISO{self.iso}")
+        if self.focal_length_35:
+            parts.append(self.focal_length_35)
+        return " ".join(parts) if parts else None
+
+    @property
+    def sublocation(self):
+        return self.iptc.sublocation
+
+    @property
+    def city(self):
+        return self.iptc.city
+
+    @property
+    def province_state(self):
+        return self.iptc.province_state
+
+    @property
+    def state(self):
+        return self.iptc.province_state
+
+    @property
+    def province(self):
+        return self.iptc.province_state
+
+    @property
+    def country(self):
+        return self.iptc.country
+
+    @property
+    def country_code(self):
+        return self.iptc.country_code
+
+    @property
+    def location(self):
+        parts = [
+            p
+            for p in (
+                self.sublocation,
+                self.city,
+                self.province_state,
+                self.country,
+            )
+            if p
+        ]
+        return ", ".join(parts) if parts else None
+
+    @property
+    def latitude(self):
+        return _parse_gps_coordinate(self.exif.latitude, self.exif.latitude_ref)
+
+    @property
+    def longitude(self):
+        return _parse_gps_coordinate(self.exif.longitude, self.exif.longitude_ref)
+
+    @property
+    def keywords(self):
+        return self.iptc.keywords or self.xmp.subject or []
+
+    @property
+    def rating(self):
+        r = self.xmp.rating
+        if r is None:
+            return 0
+        try:
+            return int(r)
+        except ValueError, TypeError:
+            return 0
+
+
 def read_metadata(path):
     """Read EXIF, IPTC, and XMP metadata from an image file.
 
-    Returns a dict of human-readable metadata fields. Missing fields are None.
+    Returns a Metadata object with raw layers and derived properties.
     """
-    result = {f: None for f in FIELDS}
+    file_layer = _build_file_layer(path)
 
     try:
-        img = pyexiv2.Image(path)
+        img = pyexiv2.Image(str(path))
         try:
             exif = img.read_exif()
             iptc = img.read_iptc()
             xmp = img.read_xmp()
+            try:
+                file_layer.width = img.get_pixel_width()
+                file_layer.height = img.get_pixel_height()
+            except Exception:
+                pass
         finally:
             img.close()
     except Exception:
         logger.debug("Failed to read metadata from %s", path, exc_info=True)
-        return result
+        return Metadata(file=file_layer)
 
-    result["title"] = _get(iptc, "Iptc.Application2.ObjectName")
-    result["description"] = _get(exif, "Exif.Image.ImageDescription") or _get(
-        iptc, "Iptc.Application2.Caption"
-    )
+    exif_layer = _build_exif_layer(exif)
+    iptc_layer = _build_iptc_layer(iptc)
+    xmp_layer = _build_xmp_layer(xmp)
 
-    # alt_text: XMP AltTextAccessibility → description → title
-    result["alt_text"] = _get(xmp, "Xmp.iptcExt.AltTextAccessibility")
-    if result["alt_text"] is None:
-        result["alt_text"] = (
-            result["description"] if result["description"] else result["title"]
-        )
-
-    result["artist"] = _get(exif, "Exif.Image.Artist") or _get(
-        iptc, "Iptc.Application2.Byline"
-    )
-    result["copyright"] = _get(exif, "Exif.Image.Copyright") or _get(
-        iptc, "Iptc.Application2.Copyright"
-    )
-
-    # datetime
-    result["datetime"] = _parse_exif_datetime(_get(exif, "Exif.Photo.DateTimeOriginal"))
-    if result["datetime"] is None:
-        result["datetime"] = _parse_iptc_datetime(
-            _get(iptc, "Iptc.Application2.DateCreated"),
-            _get(iptc, "Iptc.Application2.TimeCreated"),
-        )
-
-    # Exposure
-    result["shutter"] = _format_shutter(_get(exif, "Exif.Photo.ExposureTime"))
-    if result["shutter"] is None:
-        result["shutter"] = _format_shutter(_get(exif, "Exif.Photo.ShutterSpeedValue"))
-    result["aperture"] = _format_aperture(_get(exif, "Exif.Photo.FNumber"))
-    if result["aperture"] is None:
-        result["aperture"] = _format_aperture(_get(exif, "Exif.Photo.ApertureValue"))
-    result["iso"] = _get(exif, "Exif.Photo.ISOSpeedRatings")
-
-    # Focal length
-    result["focal_length"] = _format_focal_length(_get(exif, "Exif.Photo.FocalLength"))
-    result["focal_length_35"] = _format_focal_length(
-        _get(exif, "Exif.Photo.FocalLengthIn35mmFilm")
-    )
-
-    # Camera/lens
-    result["camera"] = _get(exif, "Exif.Image.Model")
-    result["camera_make"] = _get(exif, "Exif.Image.Make")
-    result["lens"] = _get(exif, "Exif.Photo.LensSpecification")
-    result["lens_model"] = _get(exif, "Exif.Photo.LensModel")
-    result["lens_make"] = _get(exif, "Exif.Photo.LensMake")
-
-    # Location (IPTC)
-    result["country_code"] = _get(iptc, "Iptc.Application2.CountryCode")
-    result["country"] = _get(iptc, "Iptc.Application2.CountryName")
-    result["province_state"] = _get(iptc, "Iptc.Application2.ProvinceState")
-    result["city"] = _get(iptc, "Iptc.Application2.City")
-    result["location"] = _get(iptc, "Iptc.Application2.SubLocation")
-
-    # GPS
-    result["gps_latitude"] = _parse_gps_coordinate(
-        _get(exif, "Exif.GPSInfo.GPSLatitude"),
-        _get(exif, "Exif.GPSInfo.GPSLatitudeRef"),
-    )
-    result["gps_longitude"] = _parse_gps_coordinate(
-        _get(exif, "Exif.GPSInfo.GPSLongitude"),
-        _get(exif, "Exif.GPSInfo.GPSLongitudeRef"),
-    )
-
-    # Keywords
-    result["keywords"] = _get(iptc, "Iptc.Application2.Keywords")
-    if result["keywords"] is None:
-        result["keywords"] = _get(xmp, "Xmp.dc.subject")
-
-    # Rating
-    result["rating"] = _get(xmp, "Xmp.xmp.Rating")
-
-    # Aliases
-    result["state"] = result["province_state"]
-    result["province"] = result["province_state"]
-
-    return result
+    return Metadata(file=file_layer, exif=exif_layer, iptc=iptc_layer, xmp=xmp_layer)
