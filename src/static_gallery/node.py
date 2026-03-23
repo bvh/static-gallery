@@ -47,7 +47,8 @@ class Node:
         self.type = type
         self.parent = parent
 
-        # For containers, path to an index.md file if one exists.
+        # For containers and page bundles, path to an index file
+        # (index.md, index.html, or index.htm) if one exists.
         # Starts as None until the directory is scanned.
         self.index_path = None
 
@@ -60,10 +61,10 @@ class Node:
         self.assets = []
         self._metadata = None
 
-    def get_markdown_path(self):
+    def get_content_path(self):
         path = None
         if self.type == NodeType.PAGE:
-            path = self.path
+            path = self.index_path if self.index_path else self.path
         elif self.type == NodeType.IMAGE:
             path = self.content_path
         elif self.type in (NodeType.DIRECTORY, NodeType.GALLERY, NodeType.HOME):
@@ -100,11 +101,15 @@ class Node:
 
     @property
     def template_name(self):
+        if self.type == NodeType.HOME:
+            return "home.html"
+        if self.type == NodeType.PAGE:
+            return "page.html"
         if self.type == NodeType.IMAGE:
             return "image.html"
         if self.type == NodeType.GALLERY:
             return "gallery.html"
-        if self.type == NodeType.DIRECTORY and not self.index_path:
+        if self.type == NodeType.DIRECTORY:
             return "directory.html"
         return "default.html"
 
@@ -126,11 +131,23 @@ class Node:
             return True
         return False
 
+    def is_html(self):
+        suffixes = [".html", ".htm"]
+        if self.suffix.lower() in suffixes:
+            return True
+        return False
+
     def is_dir(self):
         return self._is_dir
 
     def is_gallery(self):
-        return len(self.images) > 0 and len(self.pages) == 0
+        return (
+            len(self.images) > 0
+            and len(self.pages) == 0
+            and len(self.assets) == 0
+            and len(self.dirs) == 0
+            and self.index_path is None
+        )
 
     def to_dict(self):
         data = {}

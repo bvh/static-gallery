@@ -12,6 +12,28 @@ from static_gallery.shortcodes import ShortcodeProcessor
 from tests.helpers import make_metadata
 
 
+def _make_theme(tmp_path, **templates):
+    """Create a theme directory with required templates.
+
+    Any template can be overridden via keyword args, e.g.
+    _make_theme(tmp_path, default="custom {{ page.title }}")
+    """
+    theme = tmp_path / "theme"
+    theme.mkdir(exist_ok=True)
+    defaults = {
+        "default": "{{ page.title }}",
+        "home": "{{ page.title }}",
+        "page": "{{ page.title }}",
+        "directory": "{{ page.title }}",
+        "gallery": "{{ page.title }}",
+        "image": "{{ page.title }}",
+    }
+    defaults.update(templates)
+    for name, content in defaults.items():
+        (theme / f"{name}.html").write_text(content)
+    return theme
+
+
 def _make_home(tmp_path, index_text=None):
     """Create a HOME node rooted at tmp_path with optional index.md."""
     root = Node(str(tmp_path), type="HOME")
@@ -26,9 +48,7 @@ def _make_home(tmp_path, index_text=None):
 
 
 def test_init_creates_jinja_env(tmp_path):
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.title }}")
+    theme = _make_theme(tmp_path)
     config = Config(cli_args={"theme_path": str(theme)})
     r = Builder(config)
     assert r.env is not None
@@ -116,20 +136,20 @@ def test_template_name_home():
     node = Node.__new__(Node)
     node.type = "HOME"
     node.index_path = "/some/index.md"
-    assert node.template_name == "default.html"
+    assert node.template_name == "home.html"
 
 
 def test_template_name_markdown():
     node = Node.__new__(Node)
     node.type = "PAGE"
-    assert node.template_name == "default.html"
+    assert node.template_name == "page.html"
 
 
-def test_template_name_directory_with_index():
+def test_template_name_page_bundle():
     node = Node.__new__(Node)
-    node.type = "DIRECTORY"
+    node.type = "PAGE"
     node.index_path = "/some/index.md"
-    assert node.template_name == "default.html"
+    assert node.template_name == "page.html"
 
 
 def test_template_name_directory_without_index():
@@ -239,9 +259,7 @@ def test_page_context_directory_with_children(tmp_path):
 
 
 def test_copy_theme_assets(tmp_path):
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.title }}")
+    theme = _make_theme(tmp_path)
     static = theme / "static"
     static.mkdir()
     (static / "styles.css").write_text("body {}")
@@ -258,9 +276,7 @@ def test_copy_theme_assets(tmp_path):
 
 
 def test_copy_theme_assets_recursive(tmp_path):
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.title }}")
+    theme = _make_theme(tmp_path)
     static = theme / "static"
     static.mkdir()
     css_dir = static / "css"
@@ -279,9 +295,7 @@ def test_copy_theme_assets_recursive(tmp_path):
 
 
 def test_copy_theme_assets_no_static_dir(tmp_path):
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.title }}")
+    theme = _make_theme(tmp_path)
     public = tmp_path / "public"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
     r = Builder(config)
@@ -317,10 +331,9 @@ def test_render_basic_site(tmp_path):
     (source / "index.md").write_text("# Welcome\n\nHello world.")
 
     # Set up theme
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text(
-        "<title>{{ page.title }}</title><main>{{ page.content }}</main>"
+    theme = _make_theme(
+        tmp_path,
+        home="<title>{{ page.title }}</title><main>{{ page.content }}</main>",
     )
     static = theme / "static"
     static.mkdir()
@@ -346,10 +359,10 @@ def test_render_markdown_page(tmp_path):
     source.mkdir()
     (source / "about.md").write_text("# About Us\n\nWe are cool.")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text(
-        "<title>{{ page.title }}</title>{{ page.content }}"
+    theme = _make_theme(
+        tmp_path,
+        home="<title>{{ page.title }}</title>{{ page.content }}",
+        page="<title>{{ page.title }}</title>{{ page.content }}",
     )
 
     public = tmp_path / "output"
@@ -372,12 +385,11 @@ def test_render_nested_markdown_page(tmp_path):
     blog.mkdir()
     (blog / "post.md").write_text("# My Post\n\nPost content.")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text(
-        "<title>{{ page.title }}</title>{{ page.content }}"
+    theme = _make_theme(
+        tmp_path,
+        page="<title>{{ page.title }}</title>{{ page.content }}",
+        directory="<h1>{{ page.title }}</h1>",
     )
-    (theme / "directory.html").write_text("<h1>{{ page.title }}</h1>")
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
@@ -399,13 +411,10 @@ def test_render_copies_images(tmp_path):
     photos.mkdir()
     (photos / "a.jpg").write_bytes(b"\xff\xd8\xff")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.title }}")
-    (theme / "gallery.html").write_text(
-        "{% for img in page.images %}{{ img.src }}{% endfor %}"
+    theme = _make_theme(
+        tmp_path,
+        gallery="{% for img in page.images %}{{ img.src }}{% endfor %}",
     )
-    (theme / "image.html").write_text("{{ page.title }}")
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
@@ -424,9 +433,7 @@ def test_render_copies_static_assets(tmp_path):
     source.mkdir()
     (source / "data.json").write_text('{"key": "value"}')
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.title }}")
+    theme = _make_theme(tmp_path)
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
@@ -444,12 +451,12 @@ def test_render_directory_listing(tmp_path):
     sub.mkdir()
     (sub / "page.md").write_text("# A Page")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.title }}")
-    (theme / "directory.html").write_text(
-        "<h1>{{ page.title }}</h1>"
-        '{% for p in page.pages %}<a href="{{ p.url }}">{{ p.name }}</a>{% endfor %}'
+    theme = _make_theme(
+        tmp_path,
+        directory=(
+            "<h1>{{ page.title }}</h1>"
+            '{% for p in page.pages %}<a href="{{ p.url }}">{{ p.name }}</a>{% endfor %}'
+        ),
     )
 
     public = tmp_path / "output"
@@ -468,9 +475,10 @@ def test_render_site_context(tmp_path):
     source.mkdir()
     (source / "index.md").write_text("# Hi")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ site.title }} - {{ site.language }}")
+    theme = _make_theme(
+        tmp_path,
+        home="{{ site.title }} - {{ site.language }}",
+    )
 
     public = tmp_path / "output"
     config = Config(
@@ -494,10 +502,9 @@ def test_render_generator_context(tmp_path):
     source.mkdir()
     (source / "index.md").write_text("# Hi")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text(
-        "{{ generator.name }} {{ generator.package }} {{ generator.version }}"
+    theme = _make_theme(
+        tmp_path,
+        home="{{ generator.name }} {{ generator.package }} {{ generator.version }}",
     )
 
     public = tmp_path / "output"
@@ -637,10 +644,7 @@ def test_markdown_directory_collision(tmp_path):
     blog.mkdir()
     (blog / "index.md").write_text("# Blog index")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.title }}")
-    (theme / "directory.html").write_text("{{ page.title }}")
+    theme = _make_theme(tmp_path)
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
@@ -652,7 +656,7 @@ def test_markdown_directory_collision(tmp_path):
 
 
 def test_markdown_directory_static_collision(tmp_path):
-    """archive.md + archive/index.html (static asset) both map to archive/index.html."""
+    """archive.md + archive/index.html both map to archive/index.html."""
     source = tmp_path / "source"
     source.mkdir()
     (source / "archive.md").write_text("# Archive page")
@@ -660,10 +664,7 @@ def test_markdown_directory_static_collision(tmp_path):
     archive.mkdir()
     (archive / "index.html").write_text("<h1>Static archive</h1>")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.title }}")
-    (theme / "directory.html").write_text("{{ page.title }}")
+    theme = _make_theme(tmp_path)
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
@@ -684,10 +685,7 @@ def test_no_collision_normal_site(tmp_path):
     blog.mkdir()
     (blog / "post.md").write_text("# Post")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.title }}")
-    (theme / "directory.html").write_text("{{ page.title }}")
+    theme = _make_theme(tmp_path)
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
@@ -698,6 +696,60 @@ def test_no_collision_normal_site(tmp_path):
     assert (public / "index.html").exists()
     assert (public / "about" / "index.html").exists()
     assert (public / "blog" / "post" / "index.html").exists()
+
+
+def test_html_page_directory_collision(tmp_path):
+    """about.html + about/index.md both map to about/index.html — should error."""
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "about.html").write_text("<h1>About page</h1>")
+    about = source / "about"
+    about.mkdir()
+    (about / "index.md").write_text("# About bundle")
+
+    theme = _make_theme(tmp_path)
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    site = Scanner(config).scan(str(source))
+
+    with pytest.raises(RuntimeError, match="about/index.html"):
+        Builder(config).render(site)
+
+
+def test_render_page_bundle_with_children(tmp_path):
+    """Page bundle renders its own page and all children correctly."""
+    source = tmp_path / "source"
+    source.mkdir()
+    about = source / "about"
+    about.mkdir()
+    (about / "index.md").write_text("# About Us\n\nWe are cool.")
+    (about / "photo.jpg").write_bytes(b"\xff\xd8\xff")
+    (about / "data.json").write_text('{"key": "value"}')
+
+    theme = _make_theme(
+        tmp_path,
+        page="<title>{{ page.title }}</title>{{ page.content }}",
+    )
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
+
+    # Page bundle index rendered
+    about_html = (public / "about" / "index.html").read_text()
+    assert "<title>About Us</title>" in about_html
+    assert "We are cool." in about_html
+
+    # Image child rendered with its own page and file copied
+    assert (public / "about" / "photo" / "index.html").exists()
+    assert (public / "about" / "photo" / "photo.jpg").exists()
+
+    # Static asset copied
+    assert (public / "about" / "data.json").exists()
 
 
 def test_output_path_image(tmp_path):
@@ -740,14 +792,10 @@ def test_render_image_page(tmp_path):
     photos.mkdir()
     (photos / "a.jpg").write_bytes(b"\xff\xd8\xff")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.title }}")
-    (theme / "gallery.html").write_text(
-        '{% for img in page.images %}<a href="{{ img.url }}"><img src="{{ img.src }}"></a>{% endfor %}'
-    )
-    (theme / "image.html").write_text(
-        '<title>{{ page.title }}</title><img src="{{ page.image.url }}">'
+    theme = _make_theme(
+        tmp_path,
+        gallery='{% for img in page.images %}<a href="{{ img.url }}"><img src="{{ img.src }}"></a>{% endfor %}',
+        image='<title>{{ page.title }}</title><img src="{{ page.image.url }}">',
     )
 
     public = tmp_path / "output"
@@ -780,12 +828,9 @@ def test_render_image_page_with_paired_markdown(tmp_path):
     (photos / "sunset.jpg").write_bytes(b"\xff\xd8\xff")
     (photos / "sunset.md").write_text("# Golden Sunset\n\nTaken at the beach.")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.title }}")
-    (theme / "gallery.html").write_text("gallery")
-    (theme / "image.html").write_text(
-        "<title>{{ page.title }}</title>{{ page.content }}"
+    theme = _make_theme(
+        tmp_path,
+        image="<title>{{ page.title }}</title>{{ page.content }}",
     )
 
     public = tmp_path / "output"
@@ -807,11 +852,10 @@ def test_render_image_page_with_metadata(tmp_path):
     photos.mkdir()
     (photos / "a.jpg").write_bytes(b"\xff\xd8\xff")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.title }}")
-    (theme / "gallery.html").write_text("gallery")
-    (theme / "image.html").write_text("{{ page.image.camera }} {{ page.image.name }}")
+    theme = _make_theme(
+        tmp_path,
+        image="{{ page.image.camera }} {{ page.image.name }}",
+    )
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
@@ -889,11 +933,7 @@ def test_image_stem_directory_collision(tmp_path):
     sunset_dir.mkdir()
     (sunset_dir / "page.md").write_text("# Sunset page")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.title }}")
-    (theme / "directory.html").write_text("{{ page.title }}")
-    (theme / "image.html").write_text("{{ page.title }}")
+    theme = _make_theme(tmp_path)
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
@@ -909,9 +949,7 @@ def test_render_public_defaults_to_public_dir(tmp_path):
     source.mkdir()
     (source / "index.md").write_text("# Hi")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("ok")
+    theme = _make_theme(tmp_path, home="ok")
 
     old_cwd = os.getcwd()
     os.chdir(tmp_path)
@@ -936,11 +974,7 @@ def test_render_embed_image_shortcode(tmp_path):
     (photos / "sunset.jpg").write_bytes(b"\xff\xd8\xff")
     (source / "index.md").write_text("# Home\n\n<</photos/sunset.jpg>>")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.content }}")
-    (theme / "gallery.html").write_text("gallery")
-    (theme / "image.html").write_text("{{ page.title }}")
+    theme = _make_theme(tmp_path, home="{{ page.content }}")
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
@@ -960,9 +994,7 @@ def test_render_embed_code_shortcode(tmp_path):
     (source / "hello.py").write_text('print("hi")')
     (source / "index.md").write_text("# Home\n\n<</hello.py>>")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.content }}")
+    theme = _make_theme(tmp_path, home="{{ page.content }}")
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
@@ -988,7 +1020,7 @@ def test_render_gallery_shortcode(tmp_path):
     config = Config(cli_args={"public_path": str(public)})
 
     site = Scanner(config).scan(str(source))
-    site.root.dirs[0].images[0]._metadata = Metadata()
+    site.root.pages[0].images[0]._metadata = Metadata()
     Builder(config).render(site)
 
     html = (public / "photos" / "index.html").read_text()
@@ -1003,9 +1035,7 @@ def test_render_link_embed_static_file(tmp_path):
     (source / "data.csv").write_text("a,b,c")
     (source / "index.md").write_text("# Home\n\n<</data.csv>>")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.content }}")
+    theme = _make_theme(tmp_path, home="{{ page.content }}")
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
@@ -1028,12 +1058,7 @@ def test_render_cross_directory_embed(tmp_path):
     photos.mkdir()
     (photos / "sunset.jpg").write_bytes(b"\xff\xd8\xff")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.content }}")
-    (theme / "directory.html").write_text("{{ page.title }}")
-    (theme / "gallery.html").write_text("gallery")
-    (theme / "image.html").write_text("{{ page.title }}")
+    theme = _make_theme(tmp_path, page="{{ page.content }}")
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
@@ -1056,12 +1081,9 @@ def test_render_shortcodes_in_paired_markdown(tmp_path):
     (photos / "sunset.jpg").write_bytes(b"\xff\xd8\xff")
     (photos / "sunset.md").write_text("# Sunset\n\n<</photos/sunset.jpg>>")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.title }}")
-    (theme / "gallery.html").write_text("gallery")
-    (theme / "image.html").write_text(
-        "<title>{{ page.title }}</title>{{ page.content }}"
+    theme = _make_theme(
+        tmp_path,
+        image="<title>{{ page.title }}</title>{{ page.content }}",
     )
 
     public = tmp_path / "output"
@@ -1077,15 +1099,64 @@ def test_render_shortcodes_in_paired_markdown(tmp_path):
     assert "sunset.jpg" in html
 
 
+def test_render_html_page_copied_raw(tmp_path):
+    """HTML PAGE nodes are copied to pretty URL path without template wrapping."""
+    source = tmp_path / "source"
+    source.mkdir()
+    html_content = "<html><body><h1>About</h1></body></html>"
+    (source / "about.html").write_text(html_content)
+
+    theme = _make_theme(tmp_path)
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
+
+    out = public / "about" / "index.html"
+    assert out.exists()
+    assert out.read_text() == html_content
+
+
+def test_render_html_index_in_page_bundle(tmp_path):
+    """Page bundle with index.html inserts raw HTML content into template."""
+    source = tmp_path / "source"
+    source.mkdir()
+    about = source / "about"
+    about.mkdir()
+    (about / "index.html").write_text("<p>About us content</p>")
+
+    theme = _make_theme(tmp_path, page="<main>{{ page.content }}</main>")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
+
+    html = (public / "about" / "index.html").read_text()
+    assert "<main><p>About us content</p></main>" in html
+
+
+def test_output_path_html_page(tmp_path):
+    """HTML PAGE nodes get pretty URLs like markdown pages."""
+    config = Config()
+    r = Builder(config)
+    root = _make_home(tmp_path)
+    page_file = tmp_path / "about.html"
+    page_file.write_text("<h1>About</h1>")
+    page = Node(str(page_file), parent=root, type="PAGE")
+    assert r._get_output_path(page, tmp_path) == "about/index.html"
+
+
 def test_render_no_shortcodes_unchanged(tmp_path):
     """Markdown without shortcodes renders normally."""
     source = tmp_path / "source"
     source.mkdir()
     (source / "index.md").write_text("# Hello\n\nNo shortcodes here.")
 
-    theme = tmp_path / "theme"
-    theme.mkdir()
-    (theme / "default.html").write_text("{{ page.content }}")
+    theme = _make_theme(tmp_path, home="{{ page.content }}")
 
     public = tmp_path / "output"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})

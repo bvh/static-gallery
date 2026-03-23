@@ -74,6 +74,17 @@ class TestClassification:
         f.write_text("body {}")
         assert not Node(str(f)).is_markdown()
 
+    def test_is_html(self, tmp_path):
+        for ext in [".html", ".htm"]:
+            f = tmp_path / f"page{ext}"
+            f.write_text("<h1>Hi</h1>")
+            assert Node(str(f)).is_html()
+
+    def test_is_not_html(self, tmp_path):
+        f = tmp_path / "style.css"
+        f.write_text("body {}")
+        assert not Node(str(f)).is_html()
+
     def test_is_dir(self, tmp_path):
         d = tmp_path / "sub"
         d.mkdir()
@@ -144,19 +155,20 @@ class TestTemplateName:
         assert node.template_name == "directory.html"
 
     def test_directory_with_index(self, tmp_path):
-        node = Node(str(tmp_path), type=NodeType.DIRECTORY)
+        """Directories with index files are now PAGE bundles, not DIRECTORY."""
+        node = Node(str(tmp_path), type=NodeType.PAGE)
         node.index_path = "/some/index.md"
-        assert node.template_name == "default.html"
+        assert node.template_name == "page.html"
 
     def test_home(self, tmp_path):
         node = Node(str(tmp_path), type=NodeType.HOME)
-        assert node.template_name == "default.html"
+        assert node.template_name == "home.html"
 
     def test_markdown(self, tmp_path):
         f = tmp_path / "page.md"
         f.write_text("# Hi")
         node = Node(str(f), type=NodeType.PAGE)
-        assert node.template_name == "default.html"
+        assert node.template_name == "page.html"
 
     def test_image(self, tmp_path):
         f = tmp_path / "photo.jpg"
@@ -201,39 +213,72 @@ class TestIsGallery:
         node.pages = [Node(str(page), type=NodeType.PAGE)]
         assert not node.is_gallery()
 
+    def test_images_and_statics(self, tmp_path):
+        node = Node(str(tmp_path))
+        img = tmp_path / "x.jpg"
+        img.write_bytes(b"\x00")
+        asset = tmp_path / "style.css"
+        asset.write_text("body {}")
+        node.images = [Node(str(img), type=NodeType.IMAGE)]
+        node.assets = [Node(str(asset), type=NodeType.STATIC)]
+        assert not node.is_gallery()
+
+    def test_images_and_dirs(self, tmp_path):
+        node = Node(str(tmp_path))
+        img = tmp_path / "x.jpg"
+        img.write_bytes(b"\x00")
+        sub = tmp_path / "sub"
+        sub.mkdir()
+        node.images = [Node(str(img), type=NodeType.IMAGE)]
+        node.dirs = [Node(str(sub), type=NodeType.DIRECTORY)]
+        assert not node.is_gallery()
+
+    def test_images_and_index_path(self, tmp_path):
+        node = Node(str(tmp_path))
+        img = tmp_path / "x.jpg"
+        img.write_bytes(b"\x00")
+        node.images = [Node(str(img), type=NodeType.IMAGE)]
+        node.index_path = "/some/index.md"
+        assert not node.is_gallery()
+
     def test_empty(self, tmp_path):
         node = Node(str(tmp_path))
         assert not node.is_gallery()
 
 
-class TestGetMarkdownPath:
+class TestGetContentPath:
     def test_markdown_returns_own_path(self, tmp_path):
         f = tmp_path / "page.md"
         f.write_text("# Hi")
         node = Node(str(f), type=NodeType.PAGE)
-        assert node.get_markdown_path() == str(f)
+        assert node.get_content_path() == str(f)
 
     def test_container_returns_index_path(self, tmp_path):
         node = Node(str(tmp_path), type=NodeType.HOME)
         node.index_path = "/some/index.md"
-        assert node.get_markdown_path() == "/some/index.md"
+        assert node.get_content_path() == "/some/index.md"
 
     def test_container_returns_none_without_index(self, tmp_path):
         node = Node(str(tmp_path), type=NodeType.DIRECTORY)
-        assert node.get_markdown_path() is None
+        assert node.get_content_path() is None
+
+    def test_page_bundle_returns_index_path(self, tmp_path):
+        node = Node(str(tmp_path), type=NodeType.PAGE)
+        node.index_path = "/some/index.md"
+        assert node.get_content_path() == "/some/index.md"
 
     def test_image_returns_content_path(self, tmp_path):
         f = tmp_path / "photo.jpg"
         f.write_bytes(b"\x00")
         node = Node(str(f), type=NodeType.IMAGE)
         node.content_path = "/some/photo.md"
-        assert node.get_markdown_path() == "/some/photo.md"
+        assert node.get_content_path() == "/some/photo.md"
 
     def test_image_returns_none_without_content_path(self, tmp_path):
         f = tmp_path / "photo.jpg"
         f.write_bytes(b"\x00")
         node = Node(str(f), type=NodeType.IMAGE)
-        assert node.get_markdown_path() is None
+        assert node.get_content_path() is None
 
 
 class TestMetadata:

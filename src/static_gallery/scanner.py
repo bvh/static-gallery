@@ -29,6 +29,7 @@ class Scanner:
         dirs = []
         images = []
         markdowns = []
+        htmls = []
         statics = []
 
         with os.scandir(parent.path) as path:
@@ -39,9 +40,10 @@ class Scanner:
                 # skip symlinks
                 if entry.is_symlink():
                     continue
-                # if name is index.md, it becomes the text source for the
-                # container and is not treated as a separate node
-                if entry.name.lower() == "index.md":
+                # if name is an index file (index.md, index.html, index.htm),
+                # it becomes the content source for the container and is not
+                # treated as a separate node
+                if entry.name.lower() in ("index.md", "index.html", "index.htm"):
                     parent.index_path = entry.path
                     parent.mtime = entry.stat().st_mtime
                     count += 1  # container is not empty
@@ -60,9 +62,12 @@ class Scanner:
                 if child.is_dir():
                     if not self._scan_directory(child):
                         continue
-                    child.type = (
-                        NodeType.GALLERY if child.is_gallery() else NodeType.DIRECTORY
-                    )
+                    if child.index_path is not None:
+                        child.type = NodeType.PAGE
+                    elif child.is_gallery():
+                        child.type = NodeType.GALLERY
+                    else:
+                        child.type = NodeType.DIRECTORY
                     dirs.append(child)
                 elif child.is_image():
                     child.type = NodeType.IMAGE
@@ -70,6 +75,9 @@ class Scanner:
                 elif child.is_markdown():
                     child.type = NodeType.PAGE
                     markdowns.append(child)
+                elif child.is_html():
+                    child.type = NodeType.PAGE
+                    htmls.append(child)
                 else:
                     child.type = NodeType.STATIC
                     statics.append(child)
@@ -83,6 +91,11 @@ class Scanner:
                 parent.add_child(md)
                 self._add_to_index(md)
                 count += 1
+
+        for html in htmls:
+            parent.add_child(html)
+            self._add_to_index(html)
+            count += 1
 
         for img in images:
             parent.add_child(img)

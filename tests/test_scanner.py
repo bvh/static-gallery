@@ -84,6 +84,23 @@ def test_image_files_classified(tmp_path):
     assert all(i.type == "IMAGE" for i in site.root.images)
 
 
+def test_html_files_classified_as_page(tmp_path):
+    (tmp_path / "about.html").write_text("<h1>About</h1>")
+    (tmp_path / "contact.htm").write_text("<h1>Contact</h1>")
+    site = Scanner().scan(str(tmp_path))
+    assert len(site.root.pages) == 2
+    assert all(p.type == "PAGE" for p in site.root.pages)
+
+
+def test_html_does_not_pair_with_image(tmp_path):
+    (tmp_path / "photo.html").write_text("<h1>Photo</h1>")
+    (tmp_path / "photo.jpg").write_bytes(b"\xff\xd8\xff")
+    site = Scanner().scan(str(tmp_path))
+    assert len(site.root.pages) == 1
+    assert len(site.root.images) == 1
+    assert site.root.images[0].content_path is None
+
+
 def test_static_files_classified(tmp_path):
     (tmp_path / "style.css").write_text("body {}")
     (tmp_path / "script.js").write_text("console.log()")
@@ -187,6 +204,36 @@ def test_site_conf_skipped_when_config_path_set(tmp_path):
     assert config.get("site.title") is None
 
 
+def test_index_html_sets_parent_text(tmp_path):
+    sub = tmp_path / "about"
+    sub.mkdir()
+    index = sub / "index.html"
+    index.write_text("<h1>About</h1>")
+    site = Scanner().scan(str(tmp_path))
+    about = site.root.pages[0]
+    assert about.index_path == str(index)
+    assert about.type == "PAGE"
+
+
+def test_index_htm_sets_parent_text(tmp_path):
+    sub = tmp_path / "about"
+    sub.mkdir()
+    index = sub / "index.htm"
+    index.write_text("<h1>About</h1>")
+    site = Scanner().scan(str(tmp_path))
+    about = site.root.pages[0]
+    assert about.index_path == str(index)
+    assert about.type == "PAGE"
+
+
+def test_index_html_case_insensitive(tmp_path):
+    index = tmp_path / "INDEX.HTML"
+    index.write_text("<h1>Home</h1>")
+    site = Scanner().scan(str(tmp_path))
+    assert site.root.index_path == str(index)
+    assert len(site.root.pages) == 0
+
+
 def test_index_md_case_insensitive(tmp_path):
     index = tmp_path / "INDEX.MD"
     index.write_text("# Upper")
@@ -243,6 +290,42 @@ def test_paired_markdown_mixed_directory(tmp_path):
     (sub / "about.md").write_text("# About")
     site = Scanner().scan(str(tmp_path))
     assert site.root.dirs[0].type == "DIRECTORY"
+
+
+def test_page_bundle_with_index_md(tmp_path):
+    """Directory with index.md is classified as PAGE (page bundle)."""
+    sub = tmp_path / "about"
+    sub.mkdir()
+    (sub / "index.md").write_text("# About")
+    (sub / "photo.jpg").write_bytes(b"\xff\xd8\xff")
+    site = Scanner().scan(str(tmp_path))
+    assert len(site.root.pages) == 1
+    assert site.root.pages[0].type == "PAGE"
+    assert site.root.pages[0].name == "about"
+
+
+def test_page_bundle_with_index_html(tmp_path):
+    """Directory with index.html is classified as PAGE (page bundle)."""
+    sub = tmp_path / "about"
+    sub.mkdir()
+    (sub / "index.html").write_text("<h1>About</h1>")
+    (sub / "photo.jpg").write_bytes(b"\xff\xd8\xff")
+    site = Scanner().scan(str(tmp_path))
+    assert len(site.root.pages) == 1
+    assert site.root.pages[0].type == "PAGE"
+
+
+def test_page_bundle_overrides_gallery(tmp_path):
+    """Directory with index.md + only images is PAGE, not GALLERY."""
+    sub = tmp_path / "travel"
+    sub.mkdir()
+    (sub / "index.md").write_text("# Travel")
+    (sub / "photo1.jpg").write_bytes(b"\xff\xd8\xff")
+    (sub / "photo2.jpg").write_bytes(b"\xff\xd8\xff")
+    site = Scanner().scan(str(tmp_path))
+    assert len(site.root.pages) == 1
+    assert site.root.pages[0].type == "PAGE"
+    assert len(site.root.dirs) == 0
 
 
 def test_index_md_not_paired_with_image(tmp_path):

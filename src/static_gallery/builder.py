@@ -100,6 +100,11 @@ class Builder:
         output_abs = os.path.join(self._public_path, output_rel)
         os.makedirs(os.path.dirname(output_abs), exist_ok=True)
 
+        # HTML PAGE nodes are copied raw — no template wrapping
+        if node.type == NodeType.PAGE and node.is_html():
+            shutil.copy2(node.path, output_abs)
+            return
+
         template = self.env.get_template(node.template_name)
 
         page_ctx = self._build_page_context(node)
@@ -174,17 +179,21 @@ class Builder:
         )
 
     def _build_page_context(self, node):
-        md_path = node.get_markdown_path()
+        md_path = node.get_content_path()
         title = None
         content = ""
 
         if md_path and os.path.exists(md_path):
-            with open(md_path) as f:
-                text = f.read()
-            text = self._shortcodes.process(text, node)
-            result = self._md.render(text, remove_title=True)
-            title = result.title
-            content = Markup(result.html)
+            if md_path.lower().endswith((".html", ".htm")):
+                with open(md_path) as f:
+                    content = Markup(f.read())
+            else:
+                with open(md_path) as f:
+                    text = f.read()
+                text = self._shortcodes.process(text, node)
+                result = self._md.render(text, remove_title=True)
+                title = result.title
+                content = Markup(result.html)
 
         if not title:
             title = node.title_fallback
