@@ -5,7 +5,7 @@ import os
 import shutil
 from datetime import datetime as dt
 
-from jinja2 import Environment, FileSystemLoader, PackageLoader
+from jinja2 import ChoiceLoader, Environment, FileSystemLoader, PackageLoader
 from markupsafe import Markup
 
 from static_gallery.markdown import MarkdownRenderer
@@ -20,14 +20,14 @@ class Builder:
     def __init__(self, config):
         self.config = config
         theme_path = config.theme_path
+        bundled_loader = PackageLoader("static_gallery", "themes/default")
         if theme_path is None:
-            self._bundled_theme = True
-            loader = PackageLoader("static_gallery", "themes/default")
+            self._custom_theme_path = None
+            loader = bundled_loader
         else:
-            self._bundled_theme = False
             theme_path = os.path.abspath(theme_path)
-            self._theme_path = theme_path
-            loader = FileSystemLoader(theme_path)
+            self._custom_theme_path = theme_path
+            loader = ChoiceLoader([FileSystemLoader(theme_path), bundled_loader])
         public_path = config.public_path
         self._public_path = os.path.abspath(public_path)
         self.env = Environment(
@@ -228,10 +228,12 @@ class Builder:
         return ctx
 
     def _copy_theme_assets(self):
-        if self._bundled_theme:
-            self._copy_bundled_theme_assets()
-        else:
-            self._copy_custom_theme_assets()
+        if self._custom_theme_path is not None:
+            custom_static = os.path.join(self._custom_theme_path, "static")
+            if os.path.isdir(custom_static):
+                self._copy_custom_theme_assets()
+                return
+        self._copy_bundled_theme_assets()
 
     def _copy_bundled_theme_assets(self):
         static_dir = importlib.resources.files("static_gallery").joinpath(
@@ -251,9 +253,7 @@ class Builder:
                 self._copy_bundled_dir(item, os.path.join(dest_dir, item.name))
 
     def _copy_custom_theme_assets(self):
-        static_dir = os.path.join(self._theme_path, "static")
-        if not os.path.isdir(static_dir):
-            return
+        static_dir = os.path.join(self._custom_theme_path, "static")
         for dirpath, dirnames, filenames in os.walk(static_dir):
             for filename in filenames:
                 src = os.path.join(dirpath, filename)

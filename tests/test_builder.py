@@ -294,15 +294,15 @@ def test_copy_theme_assets_recursive(tmp_path):
     assert (public / "js" / "app.js").exists()
 
 
-def test_copy_theme_assets_no_static_dir(tmp_path):
+def test_copy_theme_assets_no_static_dir_falls_back_to_bundled(tmp_path):
     theme = _make_theme(tmp_path)
     public = tmp_path / "public"
     config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
     r = Builder(config)
     public.mkdir()
     r._copy_theme_assets()
-    # Only the public dir itself should exist, with no files copied
-    assert list(public.iterdir()) == []
+    # Custom theme has no static/ dir, so bundled statics should be copied
+    assert (public / "styles.css").exists()
 
 
 def test_copy_bundled_theme_assets(tmp_path):
@@ -591,7 +591,7 @@ def test_bundled_gallery_uses_alt_text(tmp_path):
     assert 'alt="A sunset photo"' in img_html
 
 
-def test_bundled_gallery_alt_falls_back_to_name(tmp_path):
+def test_bundled_gallery_alt_falls_back_to_title(tmp_path):
     source = tmp_path / "source"
     source.mkdir()
     photos = source / "photos"
@@ -603,12 +603,14 @@ def test_bundled_gallery_alt_falls_back_to_name(tmp_path):
 
     site = Scanner(config).scan(str(source))
     gallery_node = site.root.dirs[0]
-    gallery_node.images[0]._metadata = Metadata()
+    m = make_metadata()
+    m.file.name = "a"
+    gallery_node.images[0]._metadata = m
 
     Builder(config).render(site)
 
     html = (public / "photos" / "index.html").read_text()
-    assert 'alt="a.jpg"' in html
+    assert 'alt="a"' in html
 
 
 def test_bundled_gallery_no_figcaption_without_metadata(tmp_path):
@@ -1167,3 +1169,144 @@ def test_render_no_shortcodes_unchanged(tmp_path):
     html = (public / "index.html").read_text()
     assert "No shortcodes here." in html
     assert "<<" not in html
+
+
+# --- theme fallback ---
+
+
+def test_custom_theme_falls_back_to_bundled_templates(tmp_path):
+    """A custom theme with only home.html still renders pages via bundled page.html."""
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "index.md").write_text("# Home")
+    (source / "about.md").write_text("# About")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "home.html").write_text("CUSTOM HOME: {{ page.title }}")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
+
+    home_html = (public / "index.html").read_text()
+    assert "CUSTOM HOME:" in home_html
+
+    # about page should render using the bundled page.html, not raise TemplateNotFound
+    about_html = (public / "about" / "index.html").read_text()
+    assert "<!DOCTYPE html>" in about_html
+    assert "<main>" in about_html
+
+
+def test_custom_theme_overrides_bundled_template(tmp_path):
+    """A custom template takes priority over the bundled one."""
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "index.md").write_text("# Home")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "home.html").write_text("OVERRIDE: {{ page.title }}")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
+
+    html = (public / "index.html").read_text()
+    assert "OVERRIDE: Home" in html
+
+
+def test_custom_theme_falls_back_for_shortcode_templates(tmp_path):
+    """Shortcode templates fall back to the bundled theme."""
+    source = tmp_path / "source"
+    source.mkdir()
+    photos = source / "photos"
+    photos.mkdir()
+    (photos / "cat.jpg").write_bytes(b"\xff\xd8\xff\xe0")
+
+    (source / "index.md").write_text("# Home\n\n<<gallery>>")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    (theme / "home.html").write_text("{{ page.content }}")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
+
+    html = (public / "index.html").read_text()
+    # The bundled codes/gallery.html renders a <ul class="gallery"> list
+    assert '<ul class="gallery">' in html
+
+
+def test_custom_theme_overrides_shortcode_template(tmp_path):
+    """A custom codes/gallery.html takes priority over the bundled one."""
+    source = tmp_path / "source"
+    source.mkdir()
+    photos = source / "photos"
+    photos.mkdir()
+    (photos / "cat.jpg").write_bytes(b"\xff\xd8\xff\xe0")
+
+    (source / "index.md").write_text("# Home\n\n<<gallery>>")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    codes = theme / "codes"
+    codes.mkdir()
+    (codes / "gallery.html").write_text("CUSTOM GALLERY SHORTCODE")
+    (theme / "home.html").write_text("{{ page.content }}")
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
+
+    html = (public / "index.html").read_text()
+    assert "CUSTOM GALLERY SHORTCODE" in html
+
+
+def test_custom_theme_falls_back_for_included_blocks(tmp_path):
+    """A custom template using {% include %} resolves blocks from bundled theme."""
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "index.md").write_text("# Home")
+
+    theme = tmp_path / "theme"
+    theme.mkdir()
+    # Use {% include %} for a block that only exists in the bundled theme
+    (theme / "home.html").write_text('{% include "blocks/footer.html" %}CUSTOM HOME')
+
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
+
+    html = (public / "index.html").read_text()
+    assert "CUSTOM HOME" in html
+    assert "<footer>" in html
+
+
+def test_custom_theme_with_static_copies_only_custom_statics(tmp_path):
+    """When custom theme has static/, only custom statics are copied."""
+    theme = _make_theme(tmp_path)
+    static = theme / "static"
+    static.mkdir()
+    (static / "custom.css").write_text("body { color: red; }")
+
+    public = tmp_path / "public"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+    r = Builder(config)
+    public.mkdir()
+    r._copy_theme_assets()
+
+    assert (public / "custom.css").exists()
+    # Bundled styles.css should NOT be copied
+    assert not (public / "styles.css").exists()
