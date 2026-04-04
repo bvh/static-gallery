@@ -20,6 +20,18 @@ body {
     line-height: 1.25;
 }
 
+header, p, footer {
+    margin: 1em 0 1em 0;
+}
+
+footer {
+    margin: 3em 0 1em 0;
+}
+
+ul {
+    padding-left: 2em;
+}
+
 /* Thumbnail Gallery */
 
 .gallery {
@@ -28,6 +40,11 @@ body {
     flex-wrap: wrap;
     gap: 2rem;
 }
+
+ul.gallery {
+    padding-left: 0;
+}
+
 .gallery li {
     list-style-type: none;
     flex: 0 1 calc(50% - 1rem);

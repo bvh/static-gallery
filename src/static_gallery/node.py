@@ -180,6 +180,7 @@ def build_image_data(img):
     m = img.metadata
     data = SimpleNamespace(
         name=img.name,
+        id=img.stem,
         url=img.stem + "/",
         src=img.stem + "/" + img.name,
         metadata=m,
