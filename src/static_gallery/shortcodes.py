@@ -126,4 +126,8 @@ class ShortcodeProcessor:
         image_data = [build_image_data(img) for img in images]
 
         template = self._env.get_template("codes/gallery.html")
-        return template.render(images=image_data)
+        html = template.render(images=image_data)
+        # Collapse blank lines so markdown-it doesn't terminate HTML blocks
+        # mid-output (blank lines end CommonMark HTML blocks, causing
+        # indented <li> elements to be parsed as code blocks).
+        return re.sub(r"\n\s*\n", "\n", html)
