@@ -4,7 +4,7 @@ from datetime import datetime
 import pyexiv2
 import pytest
 
-from static_gallery.metadata import Metadata, read_metadata
+from static_gallery.metadata import Metadata, read_metadata, strip_metadata
 
 # Minimal valid JPEG (SOI + APP0 + EOI)
 MINIMAL_JPEG = bytes(
@@ -480,3 +480,93 @@ def test_read_metadata_nonexistent_file(tmp_path):
     assert isinstance(meta, Metadata)
     assert meta.title == "nonexistent"
     assert meta.camera is None
+
+
+# --- strip_metadata ---
+
+
+def test_strip_metadata_removes_non_copyright_exif(fixture_image):
+    """strip_metadata removes GPS, camera, etc. but keeps artist and copyright."""
+    strip_metadata(fixture_image)
+    img = pyexiv2.Image(fixture_image)
+    exif = img.read_exif()
+    img.close()
+    assert "Exif.Image.Artist" in exif
+    assert exif["Exif.Image.Artist"] == "Jane Doe"
+    assert "Exif.Image.Copyright" in exif
+    assert exif["Exif.Image.Copyright"] == "2024 Jane Doe"
+    assert "Exif.GPSInfo.GPSLatitude" not in exif
+    assert "Exif.Image.Model" not in exif
+    assert "Exif.Photo.FocalLength" not in exif
+
+
+def test_strip_metadata_preserves_iptc_copyright(tmp_path):
+    """strip_metadata keeps IPTC byline and copyright, removes other IPTC fields."""
+    path = _make_jpeg(tmp_path, "iptc_test.jpg")
+    img = pyexiv2.Image(path)
+    img.modify_iptc(
+        {
+            "Iptc.Application2.Byline": "John Smith",
+            "Iptc.Application2.Copyright": "2024 John Smith",
+            "Iptc.Application2.City": "Paris",
+            "Iptc.Application2.Keywords": ["test"],
+        }
+    )
+    img.close()
+
+    strip_metadata(path)
+
+    img = pyexiv2.Image(path)
+    iptc = img.read_iptc()
+    img.close()
+    assert iptc.get("Iptc.Application2.Byline") == ["John Smith"]
+    assert iptc.get("Iptc.Application2.Copyright") == "2024 John Smith"
+    assert "Iptc.Application2.City" not in iptc
+    assert "Iptc.Application2.Keywords" not in iptc
+
+
+def test_strip_metadata_preserves_xmp_copyright(tmp_path):
+    """strip_metadata keeps XMP creator and rights, removes other XMP fields."""
+    path = _make_jpeg(tmp_path, "xmp_test.jpg")
+    img = pyexiv2.Image(path)
+    img.modify_xmp(
+        {
+            "Xmp.dc.creator": ["Jane Doe"],
+            "Xmp.dc.rights": "2024 Jane Doe",
+            "Xmp.xmp.Rating": "5",
+        }
+    )
+    img.close()
+
+    strip_metadata(path)
+
+    img = pyexiv2.Image(path)
+    xmp = img.read_xmp()
+    img.close()
+    assert "Xmp.dc.creator" in xmp
+    assert "Xmp.dc.rights" in xmp
+    assert "Xmp.xmp.Rating" not in xmp
+
+
+def test_strip_metadata_preserves_image_data(fixture_image):
+    """Stripped JPEG is still a valid JPEG."""
+    original_size = os.path.getsize(fixture_image)
+    strip_metadata(fixture_image)
+    with open(fixture_image, "rb") as f:
+        header = f.read(2)
+    assert header == b"\xff\xd8"  # JPEG magic bytes
+    assert os.path.getsize(fixture_image) < original_size
+
+
+def test_strip_metadata_handles_unsupported_format(tmp_path):
+    """strip_metadata silently skips files pyexiv2 cannot handle."""
+    path = tmp_path / "fake.gif"
+    path.write_bytes(b"GIF89a" + b"\x00" * 100)
+    original = path.read_bytes()
+    strip_metadata(str(path))
+    assert path.read_bytes() == original
+
+
+def test_strip_metadata_nonexistent_file(tmp_path):
+    """strip_metadata does not raise on a missing file."""
+    strip_metadata(str(tmp_path / "missing.jpg"))

@@ -1,5 +1,6 @@
 import os
 
+import pyexiv2
 import pytest
 
 from static_gallery.builder import Builder
@@ -10,6 +11,7 @@ from static_gallery.node import Node
 from static_gallery.scanner import Scanner
 from static_gallery.shortcodes import ShortcodeProcessor
 from tests.helpers import make_metadata
+from tests.test_metadata import MINIMAL_JPEG
 
 
 def _make_theme(tmp_path, **templates):
@@ -1310,3 +1312,48 @@ def test_custom_theme_with_static_copies_only_custom_statics(tmp_path):
     assert (public / "custom.css").exists()
     # Bundled styles.css should NOT be copied
     assert not (public / "styles.css").exists()
+
+
+def test_render_strips_metadata_from_copied_images(tmp_path):
+    """Built images have non-copyright metadata stripped; source is untouched."""
+    source = tmp_path / "source"
+    source.mkdir()
+    photos = source / "photos"
+    photos.mkdir()
+
+    img_path = photos / "a.jpg"
+    img_path.write_bytes(MINIMAL_JPEG)
+    img = pyexiv2.Image(str(img_path))
+    img.modify_exif(
+        {
+            "Exif.Image.Artist": "Jane Doe",
+            "Exif.Image.Copyright": "2024 Jane Doe",
+            "Exif.GPSInfo.GPSLatitude": "48/1 51/1 24/1",
+            "Exif.GPSInfo.GPSLatitudeRef": "N",
+            "Exif.Image.Model": "EOS R5",
+        }
+    )
+    img.close()
+
+    theme = _make_theme(tmp_path)
+    public = tmp_path / "output"
+    config = Config(cli_args={"theme_path": str(theme), "public_path": str(public)})
+
+    site = Scanner(config).scan(str(source))
+    Builder(config).render(site)
+
+    # Output image: copyright preserved, GPS and camera stripped
+    output_img = pyexiv2.Image(str(public / "photos" / "a" / "a.jpg"))
+    out_exif = output_img.read_exif()
+    output_img.close()
+    assert out_exif.get("Exif.Image.Artist") == "Jane Doe"
+    assert out_exif.get("Exif.Image.Copyright") == "2024 Jane Doe"
+    assert "Exif.GPSInfo.GPSLatitude" not in out_exif
+    assert "Exif.Image.Model" not in out_exif
+
+    # Source image: all metadata still present
+    source_img = pyexiv2.Image(str(img_path))
+    src_exif = source_img.read_exif()
+    source_img.close()
+    assert "Exif.GPSInfo.GPSLatitude" in src_exif
+    assert "Exif.Image.Model" in src_exif

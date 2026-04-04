@@ -461,3 +461,39 @@ def read_metadata(path):
     xmp_layer = _build_xmp_layer(xmp)
 
     return Metadata(file=file_layer, exif=exif_layer, iptc=iptc_layer, xmp=xmp_layer)
+
+
+_COPYRIGHT_KEYS = {
+    "exif": ("Exif.Image.Artist", "Exif.Image.Copyright"),
+    "iptc": ("Iptc.Application2.Byline", "Iptc.Application2.Copyright"),
+    "xmp": ("Xmp.dc.creator", "Xmp.dc.rights"),
+}
+
+
+def strip_metadata(path):
+    """Strip metadata from an image file in-place, preserving copyright info."""
+    try:
+        img = pyexiv2.Image(str(path))
+        try:
+            exif = img.read_exif()
+            iptc = img.read_iptc()
+            xmp = img.read_xmp()
+
+            keep_exif = {k: exif[k] for k in _COPYRIGHT_KEYS["exif"] if k in exif}
+            keep_iptc = {k: iptc[k] for k in _COPYRIGHT_KEYS["iptc"] if k in iptc}
+            keep_xmp = {k: xmp[k] for k in _COPYRIGHT_KEYS["xmp"] if k in xmp}
+
+            img.clear_exif()
+            img.clear_iptc()
+            img.clear_xmp()
+
+            if keep_exif:
+                img.modify_exif(keep_exif)
+            if keep_iptc:
+                img.modify_iptc(keep_iptc)
+            if keep_xmp:
+                img.modify_xmp(keep_xmp)
+        finally:
+            img.close()
+    except Exception:
+        logger.debug("Failed to strip metadata from %s", path, exc_info=True)

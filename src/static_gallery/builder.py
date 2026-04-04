@@ -9,6 +9,7 @@ from jinja2 import ChoiceLoader, Environment, FileSystemLoader, PackageLoader
 from markupsafe import Markup
 
 from static_gallery.markdown import MarkdownRenderer
+from static_gallery.metadata import strip_metadata
 
 from static_gallery.node import NodeType, build_image_data
 from static_gallery.shortcodes import ShortcodeProcessor
@@ -122,6 +123,7 @@ class Builder:
             img_file_abs = os.path.join(self._public_path, img_file_rel)
             os.makedirs(os.path.dirname(img_file_abs), exist_ok=True)
             shutil.copy2(img.path, img_file_abs)
+            strip_metadata(img_file_abs)
 
         # Copy static assets
         for asset in node.assets:
