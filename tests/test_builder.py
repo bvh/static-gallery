@@ -304,7 +304,7 @@ def test_copy_theme_assets_no_static_dir_falls_back_to_bundled(tmp_path):
     public.mkdir()
     r._copy_theme_assets()
     # Custom theme has no static/ dir, so bundled statics should be copied
-    assert (public / "styles.css").exists()
+    assert (public / "css/styles.css").exists()
 
 
 def test_copy_bundled_theme_assets(tmp_path):
@@ -318,7 +318,7 @@ def test_copy_bundled_theme_assets(tmp_path):
     site = Scanner(config).scan(str(source))
     Builder(config).render(site)
 
-    assert (public / "styles.css").exists()
+    assert (public / "css/styles.css").exists()
     # templates should NOT be copied
     assert not (public / "default.html").exists()
 
@@ -1244,7 +1244,7 @@ def test_custom_theme_falls_back_for_shortcode_templates(tmp_path):
 
     html = (public / "index.html").read_text()
     # The bundled codes/gallery.html renders a <ul class="gallery"> list
-    assert '<ul class="gallery">' in html
+    assert 'id="gallery"' in html
 
 
 def test_custom_theme_overrides_shortcode_template(tmp_path):

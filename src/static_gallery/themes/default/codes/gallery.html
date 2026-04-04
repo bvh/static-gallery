@@ -22,7 +22,7 @@
             </div>
             <div class="info" aria-hidden="true">
                 <h3><a href="{{ img.url }}/">{{ img.title | title }}</a></h3>
-                <p class="date">{{ img.datetime.strftime('%B, %Y') }}</p>
+                {% if img.datetime %}<p class="date">{{ img.datetime.strftime('%B, %Y') }}</p>{% endif %}
                 <p class="description">{{ img.description }}</p>
                 <p class="exposure">{{ img.shutter }}, {{ img.aperture }}, ISO {{ img.iso }}, {{ img.focal_length_35 }}</p>
                 <p class="copyright">{{ img.copyright }}</p>

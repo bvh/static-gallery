@@ -37,6 +37,8 @@ def make_metadata(**kwargs):
         "keywords": ("iptc", "keywords"),
         "rating": ("xmp", "rating"),
     }
+    if "datetime" not in kwargs:
+        kwargs["datetime"] = "2025:01:01 12:00:00"
     for key, value in kwargs.items():
         if key == "datetime":
             # Store as raw EXIF datetime string if it's a string,
